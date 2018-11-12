@@ -14,13 +14,8 @@
 		<script src="https://code.jquery.com/jquery-2.1.0.js"></script>
 		<script src="https://threejs.org/build/three.js"></script>
 		<script>
-			// At start: 
-			// 		X-axis is left/right.
-			// 		Y-axis is up/down.
-			// 		Z-axis is in/out of screen.
-
-			var RENDER_DISTANCE = 2000;		// Render distance and grid size in pixels
-			var ORIGIN = new THREE.Vector3(0,0,0); 
+			// Define constants.
+			var RENDER_DISTANCE 	= 2000;		// Render distance and grid size in pixels
 
 			var GRID_SPACE 			= 50;	// Grid space in pixels
 			var GRID_POSITION_Y 	= -100;	// Grid position below origin.
@@ -35,13 +30,15 @@
 			var CAM_ROTATE_SPEED 	= 0.02; // Camera rotation speed radians per key press
 
 			var UNIT_CUBE_SIZE = 10;
+			var CUBE_SPACE = 1;
 			var CUBE_ROTATE_SPEED 	= Math.PI / 128; // Cube rotation speeed radians per frame
 
+			var ORIGIN = new THREE.Vector3(0, 0, 0); 
 			var XAXIS = new THREE.Vector3(1, 0, 0);		// Rotate on this axis for pitch. Translate to move right (left).
 			var YAXIS = new THREE.Vector3(0, 1, 0);		// Rotate on this axis for yaw. Translate to move up (down).
 			var ZAXIS = new THREE.Vector3(0, 0, 1);		// Rotate on this for roll. Translate to move backward (forward).
 
-			// Detect key presses and set camera movement & rotation speed.
+			// Setup keyboard button name to keycode mapping.
 			var keyNames = {
 				32: "space", 
 				37: "left", 
@@ -62,10 +59,12 @@
 				90: "z"
 			}; 
 
+			// Create variables for orbital camera control.
 			var camPolarAngle = CAM_START_POLAR; 				// Horizontal rotation (longitude) in radians
 			var camAzimuthAngle = CAM_START_AZIMUTH;			// Vertical rotation (latitude) in radians
 			var camRadius = CAM_START_RADIUS;					// Distance from origin (0,0,0) to camera
 
+			// Respond to key presses.
 			$("body").keydown(function (event) {
 				// Use arrow keys to rotate camera.
 				if (keyNames[event.keyCode] === "left") {
@@ -103,26 +102,39 @@
 						camRadius = MAX_CAM_RADIUS; 
 					}
 				}
+				// Use shift key to reverse face rotation.
+				var rotDir = 1;
+				if (event.shiftKey) {
+					rotDir = -1;
+				} else {
+					rotDir = 1;
+				}
 				// Use f, r, u, l, b, d keys to trigger face rotations.
 				if (keyNames[event.keyCode] === "f") {
-					multiCube3.rotateFacePartial( multiCube3.faceF, ZAXIS, -CUBE_ROTATE_SPEED );
+					multiCube3.rotateFacePartial( multiCube3.faceF, ZAXIS, -rotDir * CUBE_ROTATE_SPEED );
 				}
 				if (keyNames[event.keyCode] === "r") {
-					multiCube3.rotateFacePartial( multiCube3.faceR, XAXIS, -CUBE_ROTATE_SPEED );
+					multiCube3.rotateFacePartial( multiCube3.faceR, XAXIS, -rotDir * CUBE_ROTATE_SPEED );
 				}
 				if (keyNames[event.keyCode] === "u") {
-					multiCube3.rotateFacePartial( multiCube3.faceU, YAXIS, -CUBE_ROTATE_SPEED );
+					multiCube3.rotateFacePartial( multiCube3.faceU, YAXIS, -rotDir * CUBE_ROTATE_SPEED );
 				}
 				if (keyNames[event.keyCode] === "l") {
-					multiCube3.rotateFacePartial( multiCube3.faceL, XAXIS, CUBE_ROTATE_SPEED );
+					multiCube3.rotateFacePartial( multiCube3.faceL, XAXIS, rotDir * CUBE_ROTATE_SPEED );
 				}
 				if (keyNames[event.keyCode] === "b") {
-					multiCube3.rotateFacePartial( multiCube3.faceB, ZAXIS, CUBE_ROTATE_SPEED );
+					multiCube3.rotateFacePartial( multiCube3.faceB, ZAXIS, rotDir * CUBE_ROTATE_SPEED );
 				}
 				if (keyNames[event.keyCode] === "d") {
-					multiCube3.rotateFacePartial( multiCube3.faceD, YAXIS, CUBE_ROTATE_SPEED );
+					multiCube3.rotateFacePartial( multiCube3.faceD, YAXIS, rotDir * CUBE_ROTATE_SPEED );
 				}
-			})				
+				// Use space to trigger face updates.
+				if (keyNames[event.keyCode] === "space") {
+					multiCube3.snapToGrid();
+					multiCube3.updateCubeNumAt();
+					multiCube3.updateFaces();
+				}
+			})
 
 			// Create a camera.
 			var camera = new THREE.PerspectiveCamera( 45, window.innerWidth / window.innerHeight, 1, RENDER_DISTANCE );
@@ -152,10 +164,6 @@
 			var ambientLight = new THREE.AmbientLight( 0xffffff, 2);
 			scene.add(ambientLight)
 
-			// Create helpers
-			// var shadowHelper = new THREE.CameraHelper( sunLight.shadow.camera );
-			// scene.add(shadowHelper);
-
 			// Create plane and grid for ground.
 			var grid = new THREE.GridHelper( 10*RENDER_DISTANCE, 10*RENDER_DISTANCE/GRID_SPACE, 0xd00000, 0x101010 );
 			grid.position.y = GRID_POSITION_Y;
@@ -171,8 +179,8 @@
 
 			// MultiCube3
 			// Define a 3x3x3 array of multi-colored cubes
-			// Starting positions: 
-			// Front face (blue)
+			// Location # used in this.cubeNumAt is as follows: 
+			// Front face (blue center)
 			//	   24 25 26
 			//     21 22 23
 			//     18 19 20
@@ -180,7 +188,7 @@
 			//	   15 16 17
 			//     12 13 14
 			//      9 10 11			
-			// Back face (green) as viewed from front
+			// Back face (green center) as viewed from front
 			// 		6  7  8
 			// 		3  4  5
 			// 		0  1  2
@@ -188,8 +196,10 @@
 			//   4 = green, 10 = white, 12 = orange 
 			// 	13 = (true center of MultiCube3) 
 			// 	14 = red, 16 = yellow, 22 = blue
-			var MultiCube3 = function ( unitCubeSize ) {
+			var MultiCube3 = function ( unitCubeSize, unitCubeSpace ) {
 				this.unitCubeSize = unitCubeSize;
+				this.unitCubeSpace = unitCubeSpace; 
+				this.gridPitch = unitCubeSize + unitCubeSpace;
 				this.unitGeo = new THREE.BoxGeometry( unitCubeSize, unitCubeSize, unitCubeSize );
 				this.unitGeo.faces[0].color.setHex( 0xff0000 );	// Red
 				this.unitGeo.faces[1].color.setHex( 0xff0000 ); // Red
@@ -206,49 +216,23 @@
 				this.unitMat = new THREE.MeshStandardMaterial( { vertexColors: THREE.FaceColors } );
 
 				this.cubes = [];
+				this.cubeNumAt = [];
 				var i = 0;
-				for (var z = -1; z <= 1; z++) {
-					for (var y = -1; y <= 1; y++) {
-						for (var x = -1; x <= 1; x++) {
+				for (var z = 0; z <= 2; z++) {
+					for (var y = 0; y <= 2; y++) {
+						for (var x = 0; x <= 2; x++) {
 							this.cubes.push(new THREE.Mesh( this.unitGeo, this.unitMat ));
-							this.cubes[i].position.x = x * (unitCubeSize + 1);
-							this.cubes[i].position.y = y * (unitCubeSize + 1);
-							this.cubes[i].position.z = z * (unitCubeSize + 1);
+							this.cubes[i].position.x = (x - 1) * (this.unitCubeSize + this.unitCubeSpace);
+							this.cubes[i].position.y = (y - 1) * (this.unitCubeSize + this.unitCubeSpace);
+							this.cubes[i].position.z = (z - 1) * (this.unitCubeSize + this.unitCubeSpace);
 							this.cubes[i].castShadow = true;
+							this.cubeNumAt[i] = i;
 							i++;
 						}; 
 					}; 
 				}; 
-				this.faceF = [		// Define front face (blue).
-					[24, 25, 26], 
-					[21, 22, 23], 
-					[18, 19, 20], 
-				];
-				this.faceR = [		// Define right face (red).
-					[26, 17,  8], 
-					[23, 14,  5], 
-					[20, 11,  2], 
-				];
-				this.faceU = [		// Define up face (yellow).
-					[ 6,  7,  8], 
-					[15, 16, 17], 
-					[24, 25, 26], 
-				];
-				this.faceL = [		// Define left face (orange).
-					[ 6, 15, 24], 
-					[ 3, 12, 21], 
-					[ 0,  9, 18], 
-				];
-				this.faceB = [		// Define back face (green).
-					[ 8,  7,  6], 
-					[ 5,  4,  3], 
-					[ 2,  1,  0], 
-				];
-				this.faceD = [		// Define down face (white).
-					[18, 19, 20], 
-					[ 9, 10, 11], 
-					[ 0,  1,  2], 
-				];
+
+				this.updateFaces();
 			}; 
 
 			// Define a method for adding a MultiCube3 to a scene.
@@ -282,8 +266,126 @@
 				};
 			};
 
+			MultiCube3.prototype.snapToGrid = function() {
+				// Snaps unit cube locations and orientations to force on-grid and on-axis.
+				for (var i=0; i<=26; i++) {
+					// Snap X position
+					if ( this.cubes[i].position.x > this.gridPitch / 2 ) {
+						this.cubes[i].position.x = this.gridPitch;
+					} else if ( this.cubes[i].position.x < -this.gridPitch / 2 ) {
+						this.cubes[i].position.x = -this.gridPitch;						
+					} else {
+						this.cubes[i].position.x = 0;
+					}
+					// Snap Y position
+					if ( this.cubes[i].position.y > this.gridPitch / 2 ) {
+						this.cubes[i].position.y = this.gridPitch;
+					} else if ( this.cubes[i].position.y < -this.gridPitch / 2 ) {
+						this.cubes[i].position.y = -this.gridPitch;						
+					} else {
+						this.cubes[i].position.y = 0;
+					}
+					// Snap Z position
+					if ( this.cubes[i].position.z > this.gridPitch / 2 ) {
+						this.cubes[i].position.z = this.gridPitch;
+					} else if ( this.cubes[i].position.z < -this.gridPitch / 2 ) {
+						this.cubes[i].position.z = -this.gridPitch;						
+					} else {
+						this.cubes[i].position.z = 0;
+					}
+					// Snap X rotation
+					if ( this.cubes[i].rotation.x < -3 * Math.PI / 4 ) {
+						this.cubes[i].rotation.x = Math.PI;
+					} else if ( this.cubes[i].rotation.x < -Math.PI / 4 ) {
+						this.cubes[i].rotation.x = -Math.PI / 2;
+					} else if ( this.cubes[i].rotation.x < Math.PI / 4 ) {
+						this.cubes[i].rotation.x = 0;
+					} else if ( this.cubes[i].rotation.x < 3 * Math.PI / 4 ) {
+						this.cubes[i].rotation.x = Math.PI / 2;
+					} else {
+						this.cubes[i].rotation.x = Math.PI;
+					}
+					// Snap Y rotation
+					if ( this.cubes[i].rotation.y < -3 * Math.PI / 4 ) {
+						this.cubes[i].rotation.y = Math.PI;
+					} else if ( this.cubes[i].rotation.y < -Math.PI / 4 ) {
+						this.cubes[i].rotation.y = -Math.PI / 2;
+					} else if ( this.cubes[i].rotation.y < Math.PI / 4 ) {
+						this.cubes[i].rotation.y = 0;
+					} else if ( this.cubes[i].rotation.y < 3 * Math.PI / 4 ) {
+						this.cubes[i].rotation.y = Math.PI / 2;
+					} else {
+						this.cubes[i].rotation.y = Math.PI;
+					}
+					// Snap Z rotation
+					if ( this.cubes[i].rotation.z < -3 * Math.PI / 4 ) {
+						this.cubes[i].rotation.z = Math.PI;
+					} else if ( this.cubes[i].rotation.z < -Math.PI / 4 ) {
+						this.cubes[i].rotation.z = -Math.PI / 2;
+					} else if ( this.cubes[i].rotation.z < Math.PI / 4 ) {
+						this.cubes[i].rotation.z = 0;
+					} else if ( this.cubes[i].rotation.z < 3 * Math.PI / 4 ) {
+						this.cubes[i].rotation.z = Math.PI / 2;
+					} else {
+						this.cubes[i].rotation.z = Math.PI;
+					}
+				}
+			}
+
+			MultiCube3.prototype.updateCubeNumAt = function() {
+				// Determines location # for each cube and update cubeNumAt array accordingly.
+				// Assumes unit cube positions have already been snapped to grid so that unit cube
+				//    positions should be integer multiples of (unitCubeSize + unitCubeSpace).
+				var gridX = 0;  // X grid position from 0 to 2.
+				var gridY = 0;  // Y grid position from 0 to 2.
+				var gridZ = 0;  // Z grid position from 0 to 2.
+				var locNum = 0;		// Location # from 0 to 26.
+				for (var i=0; i<=26; i++) {
+					gridX = ( this.cubes[i].position.x / this.gridPitch ) + 1; 
+					gridY = ( this.cubes[i].position.y / this.gridPitch ) + 1; 
+					gridZ = ( this.cubes[i].position.z / this.gridPitch ) + 1; 
+					locNum = 9*gridZ + 3*gridY + gridX;
+					this.cubeNumAt[locNum] = i;
+				};
+			};
+
+			MultiCube3.prototype.updateFaces = function() {
+				// Updates all 6 face arrays using cubeNumAt.
+				// Assumes this.cubeNumAt has already been updated.
+				this.faceF = [		// Define front face (blue).
+					[this.cubeNumAt[24], this.cubeNumAt[25], this.cubeNumAt[26]], 
+					[this.cubeNumAt[21], this.cubeNumAt[22], this.cubeNumAt[23]], 
+					[this.cubeNumAt[18], this.cubeNumAt[19], this.cubeNumAt[20]] 
+				];
+				this.faceR = [		// Define right face (red).
+					[this.cubeNumAt[26], this.cubeNumAt[17], this.cubeNumAt[8]], 
+					[this.cubeNumAt[23], this.cubeNumAt[14], this.cubeNumAt[5]], 
+					[this.cubeNumAt[20], this.cubeNumAt[11], this.cubeNumAt[2]] 
+				];
+				this.faceU = [		// Define up face (yellow).
+					[this.cubeNumAt[6],  this.cubeNumAt[7],  this.cubeNumAt[8]], 
+					[this.cubeNumAt[15], this.cubeNumAt[16], this.cubeNumAt[17]], 
+					[this.cubeNumAt[24], this.cubeNumAt[25], this.cubeNumAt[26]]
+				];
+				this.faceL = [		// Define left face (orange).
+					[this.cubeNumAt[6], this.cubeNumAt[15], this.cubeNumAt[24]], 
+					[this.cubeNumAt[3], this.cubeNumAt[12], this.cubeNumAt[21]], 
+					[this.cubeNumAt[0], this.cubeNumAt[9],  this.cubeNumAt[18]]
+				];
+				this.faceB = [		// Define back face (green).
+					[this.cubeNumAt[8], this.cubeNumAt[7], this.cubeNumAt[6]], 
+					[this.cubeNumAt[5], this.cubeNumAt[4], this.cubeNumAt[3]], 
+					[this.cubeNumAt[2], this.cubeNumAt[1], this.cubeNumAt[0]]
+				];
+				this.faceD = [		// Define down face (white).
+					[this.cubeNumAt[18], this.cubeNumAt[19], this.cubeNumAt[20]], 
+					[this.cubeNumAt[9],  this.cubeNumAt[10], this.cubeNumAt[11]], 
+					[this.cubeNumAt[0],  this.cubeNumAt[1],  this.cubeNumAt[2]]
+				];
+			};
+
 			// Create the MultiCube3 and add it to the scene.			
-			multiCube3 = new MultiCube3( UNIT_CUBE_SIZE ); 
+			multiCube3 = new MultiCube3( UNIT_CUBE_SIZE, CUBE_SPACE ); 
 			multiCube3.addToScene( scene );
 
 			// Create a renderer.
