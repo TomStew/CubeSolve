@@ -1,0 +1,220 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		<meta charset=utf-8>
+		<title>3x3 cube solve with orbital camera controls.</title>
+		<style>
+			body { margin: 0; }
+			// canvas { width: 200; height: 200 }
+			// canvas { width: 100%; height: 100% }
+		</style>
+	</head>
+
+	<body>
+		<script src="https://code.jquery.com/jquery-2.1.0.js"></script>
+		<script src="https://threejs.org/build/three.js"></script>
+		<script src="http://127.0.0.1:8887/MultiCube3.js"></script>
+		<script>
+			// Define constants.
+			var RENDER_DISTANCE 	= 2000;		// Render distance and grid size in pixels
+
+			var GRID_SPACE 			= 50;	// Grid space in pixels
+			var GRID_POSITION_Y 	= -100;	// Grid position below origin.
+
+			var CAM_ZOOM_SPEED 		= 10;	// Rate of camera radius change.
+			var MIN_CAM_RADIUS 		= 20; 	// Minimum camera distance from origin (0,0,0).
+			var CAM_START_RADIUS 	= 200;  // Starting camera distance from origin (0,0,0).
+			var MAX_CAM_RADIUS 		= 300; 	// Maximum camera distance from origin (0,0,0).
+
+			var CAM_START_POLAR 	= Math.PI / 12;
+			var CAM_START_AZIMUTH 	= Math.PI / 12; 
+			var CAM_ROTATE_SPEED 	= 0.03; // Camera rotation speed radians per key press
+
+			var UNIT_CUBE_SIZE 		= 10;
+			var CUBE_SPACE 			= 1;
+			var CUBE_ROTATE_STEPS   = 64; // Number of rotation steps for a 90 degree turn.
+			var CUBE_ROTATE_SPEED 	= Math.PI / (2*CUBE_ROTATE_STEPS); // Cube rotation speed radians per frame.
+			var FRAME_TIME			= 1000 / 60; // 60 frames per second
+
+			var ORIGIN = new THREE.Vector3(0, 0, 0); 
+			var XAXIS = new THREE.Vector3(1, 0, 0);		// Rotate on this axis for pitch. Translate to move right (left).
+			var YAXIS = new THREE.Vector3(0, 1, 0);		// Rotate on this axis for yaw. Translate to move up (down).
+			var ZAXIS = new THREE.Vector3(0, 0, 1);		// Rotate on this for roll. Translate to move backward (forward).
+
+			// Setup keyboard button name to keycode mapping.
+			var keyNames = {
+				32: "space", 
+				37: "left", 
+				38: "up", 
+				39: "right", 
+				40: "down", 
+				65: "a", 
+				66: "b",
+				68: "d",
+				70: "f",
+				76: "l",
+				82: "r", 
+				83: "s",
+				85: "u", 
+				87: "w",
+				88: "x",
+				89: "y",
+				90: "z"
+			}; 
+
+			// Create variables for orbital camera control.
+			var camPolarAngle = CAM_START_POLAR; 				// Horizontal rotation (longitude) in radians
+			var camAzimuthAngle = CAM_START_AZIMUTH;			// Vertical rotation (latitude) in radians
+			var camRadius = CAM_START_RADIUS;					// Distance from origin (0,0,0) to camera
+
+			// Respond to key presses.
+			$("body").keydown(function (event) {
+				// Use arrow keys to rotate camera.
+				if (keyNames[event.keyCode] === "left") {
+					camPolarAngle += -CAM_ROTATE_SPEED;
+				}
+				if (keyNames[event.keyCode] === "right") {
+					camPolarAngle += CAM_ROTATE_SPEED;
+				}
+				if (keyNames[event.keyCode] === "up") {
+					if ( camAzimuthAngle < Math.PI / 2 ) {
+						camAzimuthAngle += CAM_ROTATE_SPEED;
+					} else {
+						camAzimuthAngle = Math.PI / 2; 
+					}
+				}
+				if (keyNames[event.keyCode] === "down") {
+					if ( camAzimuthAngle > -Math.PI / 2 ) {
+						camAzimuthAngle -= CAM_ROTATE_SPEED;
+					} else {
+						camAzimuthAngle = -Math.PI / 2; 
+					}
+				}
+				// Use w and s keys to zoom camera in and out.
+				if (keyNames[event.keyCode] === "w") {
+					if ( camRadius > MIN_CAM_RADIUS ) {
+						camRadius -= CAM_ZOOM_SPEED;
+					} else {
+						camRadius = MIN_CAM_RADIUS; 
+					}
+				}
+				if (keyNames[event.keyCode] === "s") {
+					if ( camRadius < MAX_CAM_RADIUS ) {
+						camRadius += CAM_ZOOM_SPEED;
+					} else {
+						camRadius = MAX_CAM_RADIUS; 
+					}
+				}
+				// Use shift key to reverse face rotation.
+				var rotDir = 1;
+				if (event.shiftKey) {
+					rotDir = -1;
+				} else {
+					rotDir = 1;
+				}
+				// Use f, r, u, l, b, d keys to trigger face rotations.
+				if ( multiCube3.stable ) {		// Only trigger rotation if previous rotation is complete.
+					if (keyNames[event.keyCode] === "f") {
+						// multiCube3.rotateFacePartial( multiCube3.faceF, ZAXIS, -rotDir * CUBE_ROTATE_SPEED );
+						console.log(multiCube3.stable);
+						multiCube3.rotateFaceRecur( multiCube3.faceF, ZAXIS, -rotDir * CUBE_ROTATE_SPEED, FRAME_TIME, CUBE_ROTATE_STEPS);
+					}
+					if (keyNames[event.keyCode] === "r") {
+						// multiCube3.rotateFacePartial( multiCube3.faceR, XAXIS, -rotDir * CUBE_ROTATE_SPEED );
+						multiCube3.rotateFaceRecur( multiCube3.faceR, XAXIS, -rotDir * CUBE_ROTATE_SPEED, FRAME_TIME, CUBE_ROTATE_STEPS);
+					}
+					if (keyNames[event.keyCode] === "u") {
+						// multiCube3.rotateFacePartial( multiCube3.faceU, YAXIS, -rotDir * CUBE_ROTATE_SPEED );
+						multiCube3.rotateFaceRecur( multiCube3.faceU, YAXIS, -rotDir * CUBE_ROTATE_SPEED, FRAME_TIME, CUBE_ROTATE_STEPS);
+					}
+					if (keyNames[event.keyCode] === "l") {
+						// multiCube3.rotateFacePartial( multiCube3.faceL, XAXIS, rotDir * CUBE_ROTATE_SPEED );
+						multiCube3.rotateFaceRecur( multiCube3.faceL, XAXIS, rotDir * CUBE_ROTATE_SPEED, FRAME_TIME, CUBE_ROTATE_STEPS);
+					}
+					if (keyNames[event.keyCode] === "b") {
+						// multiCube3.rotateFacePartial( multiCube3.faceB, ZAXIS, rotDir * CUBE_ROTATE_SPEED );
+						multiCube3.rotateFaceRecur( multiCube3.faceB, ZAXIS, rotDir * CUBE_ROTATE_SPEED, FRAME_TIME, CUBE_ROTATE_STEPS);
+					}
+					if (keyNames[event.keyCode] === "d") {
+						// multiCube3.rotateFacePartial( multiCube3.faceD, YAXIS, rotDir * CUBE_ROTATE_SPEED );
+						multiCube3.rotateFaceRecur( multiCube3.faceD, YAXIS, rotDir * CUBE_ROTATE_SPEED, FRAME_TIME, CUBE_ROTATE_STEPS);
+					}
+					// Use space to trigger face updates.
+					if (keyNames[event.keyCode] === "space") {
+						multiCube3.snapToGrid();
+						multiCube3.updateCubeNumAt();
+						multiCube3.updateFaces();
+					}
+				}
+			})
+
+			// Create a camera.
+			var camera = new THREE.PerspectiveCamera( 45, window.innerWidth / window.innerHeight, 1, RENDER_DISTANCE );
+			camera.position.x = 0;
+			camera.position.y = 0;
+			camera.position.z = CAM_START_RADIUS;
+			camera.lookAt(ORIGIN);
+
+			// Create a scene and add fog to it
+			var scene = new THREE.Scene();
+			scene.fog = new THREE.FogExp2( 0xa8d7ff, 0.0008 );
+
+			// Let there be light!
+			var sunLight = new THREE.DirectionalLight( 0xffffff, 0.2 );
+			sunLight.position.set(200, 1000, 200);
+			sunLight.castShadow = true;
+			sunLight.shadow.camera.near = 1;
+			sunLight.shadow.camera.far = RENDER_DISTANCE;
+			sunLight.shadow.camera.left = -RENDER_DISTANCE / 10;
+			sunLight.shadow.camera.right = RENDER_DISTANCE / 10;
+			sunLight.shadow.camera.bottom = -RENDER_DISTANCE / 10;
+			sunLight.shadow.camera.top = RENDER_DISTANCE / 10;
+			sunLight.shadow.mapSize.width = RENDER_DISTANCE / 10;
+			sunLight.shadow.mapSize.height = RENDER_DISTANCE / 10;
+			scene.add(sunLight);
+
+			var ambientLight = new THREE.AmbientLight( 0xffffff, 2);
+			scene.add(ambientLight)
+
+			// Create plane and grid for ground.
+			var grid = new THREE.GridHelper( 10*RENDER_DISTANCE, 10*RENDER_DISTANCE/GRID_SPACE, 0xd00000, 0x101010 );
+			grid.position.y = GRID_POSITION_Y;
+			scene.add(grid);
+
+			var planeGeo = new THREE.PlaneGeometry( 10*RENDER_DISTANCE, 10*RENDER_DISTANCE, 100, 100 );
+			var planeMat = new THREE.MeshStandardMaterial( { color: 0x009900 });					
+			var planeGround = new THREE.Mesh( planeGeo, planeMat );
+			planeGround.rotation.x = -Math.PI / 2;
+			planeGround.position.y = GRID_POSITION_Y - 2;
+			scene.add(planeGround);
+			planeGround.receiveShadow = true; 
+
+			// Create the MultiCube3 and add it to the scene.			
+			multiCube3 = new MultiCube3( UNIT_CUBE_SIZE, CUBE_SPACE ); 
+			multiCube3.addToScene( scene );
+
+			// Create a renderer.
+			var renderer = new THREE.WebGLRenderer(); 
+			renderer.setSize( window.innerWidth - 10, window.innerHeight - 10 ); // Shrunk by 10 pixels to avoid shifts in screen when arrows are used.
+			renderer.setClearColor( 0xa8d7ff, 1 ); // Set clear color to sky blue.
+			renderer.shadowMap.enabled = true;
+			renderer.shadowMap.type = THREE.PCFSoftShadowMap; 
+			document.body.appendChild( renderer.domElement );
+
+			// Repeatedly render the scene from the camera's point of view.
+			renderer.render( scene, camera );
+			function animate() {
+				requestAnimationFrame( animate );
+
+				// Move the camera according to user command.
+				camera.position.z = camRadius * Math.cos(camAzimuthAngle) * Math.cos(camPolarAngle);
+				camera.position.x = camRadius * Math.cos(camAzimuthAngle) * Math.sin(camPolarAngle);
+				camera.position.y = camRadius * Math.sin(camAzimuthAngle);
+				camera.lookAt(ORIGIN); 
+
+				renderer.render( scene, camera );
+			}
+			animate(); 
+		</script>
+	</body>
+</html>
