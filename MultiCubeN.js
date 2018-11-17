@@ -80,8 +80,8 @@ var MultiCubeN = function ( multiCubeSize, unitCubeSize, unitCubeSpace ) {
 			}; 
 		}; 
 	}; 
-	this.updateFaces();
 	this.updateSlices();
+	this.updateFaces();
 }; 
 
 // Define a method for adding a MultiCubeN to a scene.
@@ -108,8 +108,8 @@ MultiCubeN.prototype.rotateFaceRecur = function( face, axis, angle, delay, count
 	} else {
 		// this.snapToGrid();
 		this.updateCubeNumAt();
-		this.updateFaces();
 		this.updateSlices();
+		this.updateFaces();
 		this.stable = true;
 	}
 }
@@ -217,36 +217,39 @@ MultiCubeN.prototype.updateCubeNumAt = function() {
 // Assumes this.cubeNumAt has already been updated.
 // Existing implementation assumes 3x3x3 (multiCubeSize = 3).
 MultiCubeN.prototype.updateFaces = function() {
-	this.faceF = [		// Define front face (blue).
+	this.faceF = this.sliceZ[this.multiCubeSize - 1];	// Define front face (blue).
+	this.faceU = this.sliceY[this.multiCubeSize - 1]; 	// Define up face (yellow).
+	this.faceR = this.sliceX[this.multiCubeSize - 1]; 	// Define right face (red).
+	this.faceB = this.sliceZ[0]; 						// Define back face (green).
+	this.faceD = this.sliceY[0]; 						// Define down face (white).
+	this.faceL = this.sliceX[0];  						// Define left face (orange).
+
+/*
 		[this.cubeNumAt[24], this.cubeNumAt[25], this.cubeNumAt[26]], 
 		[this.cubeNumAt[21], this.cubeNumAt[22], this.cubeNumAt[23]], 
 		[this.cubeNumAt[18], this.cubeNumAt[19], this.cubeNumAt[20]] 
 	];
-	this.faceR = [		// Define right face (red).
 		[this.cubeNumAt[26], this.cubeNumAt[17], this.cubeNumAt[8]], 
 		[this.cubeNumAt[23], this.cubeNumAt[14], this.cubeNumAt[5]], 
 		[this.cubeNumAt[20], this.cubeNumAt[11], this.cubeNumAt[2]] 
 	];
-	this.faceU = [		// Define up face (yellow).
 		[this.cubeNumAt[6],  this.cubeNumAt[7],  this.cubeNumAt[8]], 
 		[this.cubeNumAt[15], this.cubeNumAt[16], this.cubeNumAt[17]], 
 		[this.cubeNumAt[24], this.cubeNumAt[25], this.cubeNumAt[26]]
 	];
-	this.faceL = [		// Define left face (orange).
 		[this.cubeNumAt[6], this.cubeNumAt[15], this.cubeNumAt[24]], 
 		[this.cubeNumAt[3], this.cubeNumAt[12], this.cubeNumAt[21]], 
 		[this.cubeNumAt[0], this.cubeNumAt[9],  this.cubeNumAt[18]]
 	];
-	this.faceB = [		// Define back face (green).
 		[this.cubeNumAt[8], this.cubeNumAt[7], this.cubeNumAt[6]], 
 		[this.cubeNumAt[5], this.cubeNumAt[4], this.cubeNumAt[3]], 
 		[this.cubeNumAt[2], this.cubeNumAt[1], this.cubeNumAt[0]]
 	];
-	this.faceD = [		// Define down face (white).
 		[this.cubeNumAt[18], this.cubeNumAt[19], this.cubeNumAt[20]], 
 		[this.cubeNumAt[9],  this.cubeNumAt[10], this.cubeNumAt[11]], 
 		[this.cubeNumAt[0],  this.cubeNumAt[1],  this.cubeNumAt[2]]
 	];
+	*/
 };
 
 
