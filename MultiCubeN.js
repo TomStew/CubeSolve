@@ -91,119 +91,79 @@ MultiCubeN.prototype.addToScene = function( scene ) {
 	};
 };
 
-// Define a recursive method for rotating a face using a multi-step animation.
-//   face  = face array (e.g. faceF, faceL, etc) to be rotated
+// Define a recursive method for rotating a slice using a multi-step animation.
+//   slice  = slice array (e.g. this.sliceZ[n], this.faceF, this.faceL, etc) to be rotated
 //   axis  = real world axis to rotate around (normally X, Y, or Z)
 //   angle = rotation step size in radians
 //   delay = time between steps in ms
 //	 count = number of steps
-MultiCubeN.prototype.rotateFaceRecur = function( face, axis, angle, delay, count ) {
-	var _this = this;	// We need this to make this.rotateFaceRecur work inside the setTimeout context.
+MultiCubeN.prototype.rotateSliceRecur = function( slice, axis, angle, delay, count ) {
+	var _this = this;	// We need this to make this.rotateSliceRecur work inside the setTimeout context.
 	if (count > 0) {
 		this.stable = false; 
-		this.rotateFacePartial( face, axis, angle );
+		this.rotateSlicePartial( slice, axis, angle );
 		var timeoutID = setTimeout( function() {
-			_this.rotateFaceRecur( face, axis, angle, delay, count-1 );
+			_this.rotateSliceRecur( slice, axis, angle, delay, count-1 );
 		}, delay);
 	} else {
-		// this.snapToGrid();
+		this.snapToGrid();
 		this.updateCubeNumAt();
 		this.updateSlices();
 		this.updateFaces();
 		this.stable = true;
 	}
-}
+};
 
-// Define a method for rotating a face by an angle in a single step. 
-MultiCubeN.prototype.rotateFacePartial = function( face, axis, angle ) {
+// Define a method for rotating a slice by an angle in a single step. 
+MultiCubeN.prototype.rotateSlicePartial = function( slice, axis, angle ) {
 	var i = j = k = 0;
 	var q = new THREE.Quaternion();
 	q.setFromAxisAngle(axis, angle);
 	for (i = 0; i <= this.multiCubeSize - 1; i++) {
 		for (j = 0; j <= this.multiCubeSize - 1; j++) {
-				k = face[i][j];
+				k = slice[i][j];
 				this.cubes[k].applyQuaternion(q);
 				this.cubes[k].position.applyQuaternion(q);
 		};
 	};
 }; 
 
-// Dfine a method to snap unit cube locations and orientations to force on-grid and on-axis.
-// FIX ME for larger cubes
+// Define a method to snap unit cube locations and orientations to force on-grid and on-axis.
 MultiCubeN.prototype.snapToGrid = function() {
+	var gridX = 0;  	// X grid position from 0 to N-1.
+	var gridY = 0;  	// Y grid position from 0 to N-1.
+	var gridZ = 0;  	// Z grid position from 0 to N-1.
+	var gridRotX = 0; 	// X rotation from -1 to +2 with step size of 90 degrees.
+	var gridRotY = 0; 	// Y rotation from -1 to +2 with step size of 90 degrees.
+	var gridRotZ = 0; 	// Z rotation from -1 to +2 with step size of 90 degrees.
 	for (var i=0; i<=this.lastUnit; i++) {
-		// Snap X position
-		if ( this.cubes[i].position.x > this.gridPitch / 2 ) {
-			this.cubes[i].position.x = this.gridPitch;
-		} else if ( this.cubes[i].position.x < -this.gridPitch / 2 ) {
-			this.cubes[i].position.x = -this.gridPitch;						
-		} else {
-			this.cubes[i].position.x = 0;
-		}
-		// Snap Y position
-		if ( this.cubes[i].position.y > this.gridPitch / 2 ) {
-			this.cubes[i].position.y = this.gridPitch;
-		} else if ( this.cubes[i].position.y < -this.gridPitch / 2 ) {
-			this.cubes[i].position.y = -this.gridPitch;						
-		} else {
-			this.cubes[i].position.y = 0;
-		}
-		// Snap Z position
-		if ( this.cubes[i].position.z > this.gridPitch / 2 ) {
-			this.cubes[i].position.z = this.gridPitch;
-		} else if ( this.cubes[i].position.z < -this.gridPitch / 2 ) {
-			this.cubes[i].position.z = -this.gridPitch;						
-		} else {
-			this.cubes[i].position.z = 0;
-		}
-		// Snap X rotation
-		if ( this.cubes[i].rotation.x < -3 * Math.PI / 4 ) {
-			this.cubes[i].rotation.x = Math.PI;
-		} else if ( this.cubes[i].rotation.x < -Math.PI / 4 ) {
-			this.cubes[i].rotation.x = -Math.PI / 2;
-		} else if ( this.cubes[i].rotation.x < Math.PI / 4 ) {
-			this.cubes[i].rotation.x = 0;
-		} else if ( this.cubes[i].rotation.x < 3 * Math.PI / 4 ) {
-			this.cubes[i].rotation.x = Math.PI / 2;
-		} else {
-			this.cubes[i].rotation.x = Math.PI;
-		}
-		// Snap Y rotation
-		if ( this.cubes[i].rotation.y < -3 * Math.PI / 4 ) {
-			this.cubes[i].rotation.y = Math.PI;
-		} else if ( this.cubes[i].rotation.y < -Math.PI / 4 ) {
-			this.cubes[i].rotation.y = -Math.PI / 2;
-		} else if ( this.cubes[i].rotation.y < Math.PI / 4 ) {
-			this.cubes[i].rotation.y = 0;
-		} else if ( this.cubes[i].rotation.y < 3 * Math.PI / 4 ) {
-			this.cubes[i].rotation.y = Math.PI / 2;
-		} else {
-			this.cubes[i].rotation.y = Math.PI;
-		}
-		// Snap Z rotation
-		if ( this.cubes[i].rotation.z < -3 * Math.PI / 4 ) {
-			this.cubes[i].rotation.z = Math.PI;
-		} else if ( this.cubes[i].rotation.z < -Math.PI / 4 ) {
-			this.cubes[i].rotation.z = -Math.PI / 2;
-		} else if ( this.cubes[i].rotation.z < Math.PI / 4 ) {
-			this.cubes[i].rotation.z = 0;
-		} else if ( this.cubes[i].rotation.z < 3 * Math.PI / 4 ) {
-			this.cubes[i].rotation.z = Math.PI / 2;
-		} else {
-			this.cubes[i].rotation.z = Math.PI;
-		}
-	}
-}
+		// Snap positions to grid.
+		gridX = Math.round(( this.cubes[i].position.x / this.gridPitch ) + 0.5 * (this.multiCubeSize - 1)); 
+		gridY = Math.round(( this.cubes[i].position.y / this.gridPitch ) + 0.5 * (this.multiCubeSize - 1)); 
+		gridZ = Math.round(( this.cubes[i].position.z / this.gridPitch ) + 0.5 * (this.multiCubeSize - 1)); 
+		this.cubes[i].position.x = this.gridPitch * (gridX + 0.5 * (1 - this.multiCubeSize));
+		this.cubes[i].position.y = this.gridPitch * (gridY + 0.5 * (1 - this.multiCubeSize));
+		this.cubes[i].position.z = this.gridPitch * (gridZ + 0.5 * (1 - this.multiCubeSize));
+
+		// Snap rotations to X/Y/Z axes.
+		gridRotX = Math.round(this.cubes[i].rotation.x / (Math.PI / 2)); 
+		gridRotY = Math.round(this.cubes[i].rotation.y / (Math.PI / 2)); 
+		gridRotZ = Math.round(this.cubes[i].rotation.z / (Math.PI / 2)); 
+		this.cubes[i].rotation.x = gridRotX * Math.PI / 2;
+		this.cubes[i].rotation.y = gridRotY * Math.PI / 2;
+		this.cubes[i].rotation.z = gridRotZ * Math.PI / 2;
+	};
+};
 
 // Define a method to determine location # for each cube and update cubeNumAt 
 //    array accordingly.
 // Assumes unit cube positions have already been snapped to grid so that unit 
 //    cube positions should be integer multiples of this.gridPitch.
 MultiCubeN.prototype.updateCubeNumAt = function() {
-	var gridX = 0;  // X grid position from 0 to 2.
-	var gridY = 0;  // Y grid position from 0 to 2.
-	var gridZ = 0;  // Z grid position from 0 to 2.
-	var locNum = 0;		// Location # from 0 to 26.
+	var gridX = 0;  	// X grid position from 0 to N-1.
+	var gridY = 0;  	// Y grid position from 0 to N-1.
+	var gridZ = 0;  	// Z grid position from 0 to N-1.
+	var locNum = 0;		// Location # from 0 to N^3 - 1.
 	for (var i=0; i<=this.lastUnit; i++) {
 		gridX = ( this.cubes[i].position.x / this.gridPitch ) + 0.5 * (this.multiCubeSize - 1); 
 		gridY = ( this.cubes[i].position.y / this.gridPitch ) + 0.5 * (this.multiCubeSize - 1); 
@@ -213,49 +173,9 @@ MultiCubeN.prototype.updateCubeNumAt = function() {
 	};
 };
 
-// Define a method to update all 6 face arrays using cubeNumAt.
-// Assumes this.cubeNumAt has already been updated.
-// Existing implementation assumes 3x3x3 (multiCubeSize = 3).
-MultiCubeN.prototype.updateFaces = function() {
-	this.faceF = this.sliceZ[this.multiCubeSize - 1];	// Define front face (blue).
-	this.faceU = this.sliceY[this.multiCubeSize - 1]; 	// Define up face (yellow).
-	this.faceR = this.sliceX[this.multiCubeSize - 1]; 	// Define right face (red).
-	this.faceB = this.sliceZ[0]; 						// Define back face (green).
-	this.faceD = this.sliceY[0]; 						// Define down face (white).
-	this.faceL = this.sliceX[0];  						// Define left face (orange).
-
-/*
-		[this.cubeNumAt[24], this.cubeNumAt[25], this.cubeNumAt[26]], 
-		[this.cubeNumAt[21], this.cubeNumAt[22], this.cubeNumAt[23]], 
-		[this.cubeNumAt[18], this.cubeNumAt[19], this.cubeNumAt[20]] 
-	];
-		[this.cubeNumAt[26], this.cubeNumAt[17], this.cubeNumAt[8]], 
-		[this.cubeNumAt[23], this.cubeNumAt[14], this.cubeNumAt[5]], 
-		[this.cubeNumAt[20], this.cubeNumAt[11], this.cubeNumAt[2]] 
-	];
-		[this.cubeNumAt[6],  this.cubeNumAt[7],  this.cubeNumAt[8]], 
-		[this.cubeNumAt[15], this.cubeNumAt[16], this.cubeNumAt[17]], 
-		[this.cubeNumAt[24], this.cubeNumAt[25], this.cubeNumAt[26]]
-	];
-		[this.cubeNumAt[6], this.cubeNumAt[15], this.cubeNumAt[24]], 
-		[this.cubeNumAt[3], this.cubeNumAt[12], this.cubeNumAt[21]], 
-		[this.cubeNumAt[0], this.cubeNumAt[9],  this.cubeNumAt[18]]
-	];
-		[this.cubeNumAt[8], this.cubeNumAt[7], this.cubeNumAt[6]], 
-		[this.cubeNumAt[5], this.cubeNumAt[4], this.cubeNumAt[3]], 
-		[this.cubeNumAt[2], this.cubeNumAt[1], this.cubeNumAt[0]]
-	];
-		[this.cubeNumAt[18], this.cubeNumAt[19], this.cubeNumAt[20]], 
-		[this.cubeNumAt[9],  this.cubeNumAt[10], this.cubeNumAt[11]], 
-		[this.cubeNumAt[0],  this.cubeNumAt[1],  this.cubeNumAt[2]]
-	];
-	*/
-};
-
-
 // Define a method to update all slice arrays using cubeNumAt.
 // Valid for any value of multiCubeSize.
-// Assumes this.cubeNumAt has already been updated.
+// Assumes this.updateCubeNumAt has already been run.
 MultiCubeN.prototype.updateSlices = function() {
 	var i = x = y = z = 0;
 	for (z = 0; z <= this.multiCubeSize - 1; z++) {
@@ -265,7 +185,18 @@ MultiCubeN.prototype.updateSlices = function() {
 				this.sliceY[y][z][x] = this.cubeNumAt[i];
 				this.sliceZ[z][y][x] = this.cubeNumAt[i];
 				i++;
-			}
-		}
-	}
+			};
+		};
+	};
+};
+
+// Define a method to update all 6 face arrays using cubeNumAt.
+// Assumes this.updateCubeNumAt and this.updateSlices have already been run.
+MultiCubeN.prototype.updateFaces = function() {
+	this.faceF = this.sliceZ[this.multiCubeSize - 1];	// Define front face (blue).
+	this.faceU = this.sliceY[this.multiCubeSize - 1]; 	// Define up face (yellow).
+	this.faceR = this.sliceX[this.multiCubeSize - 1]; 	// Define right face (red).
+	this.faceB = this.sliceZ[0]; 						// Define back face (green).
+	this.faceD = this.sliceY[0]; 						// Define down face (white).
+	this.faceL = this.sliceX[0];  						// Define left face (orange).
 };

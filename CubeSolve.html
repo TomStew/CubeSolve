@@ -16,7 +16,7 @@
 		<script src="http://127.0.0.1:8887/MultiCubeN.js"></script>
 		<script>
 			// Define constants.
-			var NUM_CUBE			= 4;  // Specify multi-cube size (# of unit cubes per edge, min=2, max=10)
+			var NUM_CUBE			= 3;  // Specify multi-cube size (# of unit cubes per edge, min=2, max=10)
 
 			var UNIT_CUBE_SIZE 		= 10;
 			var CUBE_SPACE 			= 1;
@@ -145,53 +145,53 @@
 				if ( multiCubeN.stable ) {		
 					// Use f, r, u, l, b, d keys to trigger face rotations.
 					if (keyNames[event.keyCode] === "f") {
-						multiCubeN.rotateFaceRecur( multiCubeN.faceF, ZAXIS, -rotDir * CUBE_ROTATE_SPEED, FRAME_TIME, CUBE_ROTATE_STEPS);
+						multiCubeN.rotateSliceRecur( multiCubeN.faceF, ZAXIS, -rotDir * CUBE_ROTATE_SPEED, FRAME_TIME, CUBE_ROTATE_STEPS);
 					}
 					if (keyNames[event.keyCode] === "r") {
-						multiCubeN.rotateFaceRecur( multiCubeN.faceR, XAXIS, -rotDir * CUBE_ROTATE_SPEED, FRAME_TIME, CUBE_ROTATE_STEPS);
+						multiCubeN.rotateSliceRecur( multiCubeN.faceR, XAXIS, -rotDir * CUBE_ROTATE_SPEED, FRAME_TIME, CUBE_ROTATE_STEPS);
 					}
 					if (keyNames[event.keyCode] === "u") {
-						multiCubeN.rotateFaceRecur( multiCubeN.faceU, YAXIS, -rotDir * CUBE_ROTATE_SPEED, FRAME_TIME, CUBE_ROTATE_STEPS);
+						multiCubeN.rotateSliceRecur( multiCubeN.faceU, YAXIS, -rotDir * CUBE_ROTATE_SPEED, FRAME_TIME, CUBE_ROTATE_STEPS);
 					}
 					if (keyNames[event.keyCode] === "l") {
-						multiCubeN.rotateFaceRecur( multiCubeN.faceL, XAXIS, rotDir * CUBE_ROTATE_SPEED, FRAME_TIME, CUBE_ROTATE_STEPS);
+						multiCubeN.rotateSliceRecur( multiCubeN.faceL, XAXIS, rotDir * CUBE_ROTATE_SPEED, FRAME_TIME, CUBE_ROTATE_STEPS);
 					}
 					if (keyNames[event.keyCode] === "b") {
-						multiCubeN.rotateFaceRecur( multiCubeN.faceB, ZAXIS, rotDir * CUBE_ROTATE_SPEED, FRAME_TIME, CUBE_ROTATE_STEPS);
+						multiCubeN.rotateSliceRecur( multiCubeN.faceB, ZAXIS, rotDir * CUBE_ROTATE_SPEED, FRAME_TIME, CUBE_ROTATE_STEPS);
 					}
 					if (keyNames[event.keyCode] === "d") {
-						multiCubeN.rotateFaceRecur( multiCubeN.faceD, YAXIS, rotDir * CUBE_ROTATE_SPEED, FRAME_TIME, CUBE_ROTATE_STEPS);
+						multiCubeN.rotateSliceRecur( multiCubeN.faceD, YAXIS, rotDir * CUBE_ROTATE_SPEED, FRAME_TIME, CUBE_ROTATE_STEPS);
 					}
 					// Use number keys to trigger slice rotations.
 					if (keyNames[event.keyCode] === "0") {
-						multiCubeN.rotateFaceRecur( sliceArray[0], rotAxis, rotDir * CUBE_ROTATE_SPEED, FRAME_TIME, CUBE_ROTATE_STEPS);
+						multiCubeN.rotateSliceRecur( sliceArray[0], rotAxis, rotDir * CUBE_ROTATE_SPEED, FRAME_TIME, CUBE_ROTATE_STEPS);
 					}
 					if (keyNames[event.keyCode] === "1") {
-						multiCubeN.rotateFaceRecur( sliceArray[1], rotAxis, rotDir * CUBE_ROTATE_SPEED, FRAME_TIME, CUBE_ROTATE_STEPS);
+						multiCubeN.rotateSliceRecur( sliceArray[1], rotAxis, rotDir * CUBE_ROTATE_SPEED, FRAME_TIME, CUBE_ROTATE_STEPS);
 					}
 					if (keyNames[event.keyCode] === "2" && multiCubeN.multiCubeSize > 2) {
-						multiCubeN.rotateFaceRecur( sliceArray[2], rotAxis, rotDir * CUBE_ROTATE_SPEED, FRAME_TIME, CUBE_ROTATE_STEPS);
+						multiCubeN.rotateSliceRecur( sliceArray[2], rotAxis, rotDir * CUBE_ROTATE_SPEED, FRAME_TIME, CUBE_ROTATE_STEPS);
 					}
 					if (keyNames[event.keyCode] === "3" && multiCubeN.multiCubeSize > 3) {
-						multiCubeN.rotateFaceRecur( sliceArray[3], rotAxis, rotDir * CUBE_ROTATE_SPEED, FRAME_TIME, CUBE_ROTATE_STEPS);
+						multiCubeN.rotateSliceRecur( sliceArray[3], rotAxis, rotDir * CUBE_ROTATE_SPEED, FRAME_TIME, CUBE_ROTATE_STEPS);
 					}
 					if (keyNames[event.keyCode] === "4" && multiCubeN.multiCubeSize > 4) {
-						multiCubeN.rotateFaceRecur( sliceArray[4], rotAxis, rotDir * CUBE_ROTATE_SPEED, FRAME_TIME, CUBE_ROTATE_STEPS);
+						multiCubeN.rotateSliceRecur( sliceArray[4], rotAxis, rotDir * CUBE_ROTATE_SPEED, FRAME_TIME, CUBE_ROTATE_STEPS);
 					}
 					if (keyNames[event.keyCode] === "5" && multiCubeN.multiCubeSize > 5) {
-						multiCubeN.rotateFaceRecur( sliceArray[5], rotAxis, rotDir * CUBE_ROTATE_SPEED, FRAME_TIME, CUBE_ROTATE_STEPS);
+						multiCubeN.rotateSliceRecur( sliceArray[5], rotAxis, rotDir * CUBE_ROTATE_SPEED, FRAME_TIME, CUBE_ROTATE_STEPS);
 					}
 					if (keyNames[event.keyCode] === "6" && multiCubeN.multiCubeSize > 6) {
-						multiCubeN.rotateFaceRecur( sliceArray[6], rotAxis, rotDir * CUBE_ROTATE_SPEED, FRAME_TIME, CUBE_ROTATE_STEPS);
+						multiCubeN.rotateSliceRecur( sliceArray[6], rotAxis, rotDir * CUBE_ROTATE_SPEED, FRAME_TIME, CUBE_ROTATE_STEPS);
 					}
 					if (keyNames[event.keyCode] === "7" && multiCubeN.multiCubeSize > 7) {
-						multiCubeN.rotateFaceRecur( sliceArray[7], rotAxis, rotDir * CUBE_ROTATE_SPEED, FRAME_TIME, CUBE_ROTATE_STEPS);
+						multiCubeN.rotateSliceRecur( sliceArray[7], rotAxis, rotDir * CUBE_ROTATE_SPEED, FRAME_TIME, CUBE_ROTATE_STEPS);
 					}
 					if (keyNames[event.keyCode] === "8" && multiCubeN.multiCubeSize > 8) {
-						multiCubeN.rotateFaceRecur( sliceArray[8], rotAxis, rotDir * CUBE_ROTATE_SPEED, FRAME_TIME, CUBE_ROTATE_STEPS);
+						multiCubeN.rotateSliceRecur( sliceArray[8], rotAxis, rotDir * CUBE_ROTATE_SPEED, FRAME_TIME, CUBE_ROTATE_STEPS);
 					}
 					if (keyNames[event.keyCode] === "9" && multiCubeN.multiCubeSize > 9) {
-						multiCubeN.rotateFaceRecur( sliceArray[9], rotAxis, rotDir * CUBE_ROTATE_SPEED, FRAME_TIME, CUBE_ROTATE_STEPS);
+						multiCubeN.rotateSliceRecur( sliceArray[9], rotAxis, rotDir * CUBE_ROTATE_SPEED, FRAME_TIME, CUBE_ROTATE_STEPS);
 					}
 					// Use space to trigger face and slice updates.
 					if (keyNames[event.keyCode] === "space") {
