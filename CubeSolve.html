@@ -2,7 +2,7 @@
 <html>
 	<head>
 		<meta charset=utf-8>
-		<title>3x3 cube solve with orbital camera controls.</title>
+		<title>NxNxN cube solve with orbital camera controls.</title>
 		<style>
 			body { margin: 0; }
 			// canvas { width: 200; height: 200 }
@@ -13,9 +13,16 @@
 	<body>
 		<script src="https://code.jquery.com/jquery-2.1.0.js"></script>
 		<script src="https://threejs.org/build/three.js"></script>
-		<script src="http://127.0.0.1:8887/MultiCube3.js"></script>
+		<script src="http://127.0.0.1:8887/MultiCubeN.js"></script>
 		<script>
 			// Define constants.
+			var NUM_CUBE			= 9;  // Specify multi-cube size (# of unit cubes per edge, min=2, max=10)
+
+			var UNIT_CUBE_SIZE 		= 10;
+			var CUBE_SPACE 			= 1;
+			var CUBE_ROTATE_STEPS   = 64; // Number of rotation steps for a 90 degree turn.
+			var CUBE_ROTATE_SPEED 	= Math.PI / (2*CUBE_ROTATE_STEPS); // Cube rotation speed radians per frame.
+			var FRAME_TIME			= 1000 / 60; // 60 frames per second
 			var RENDER_DISTANCE 	= 2000;		// Render distance and grid size in pixels
 
 			var GRID_SPACE 			= 50;	// Grid space in pixels
@@ -30,11 +37,6 @@
 			var CAM_START_AZIMUTH 	= Math.PI / 12; 
 			var CAM_ROTATE_SPEED 	= 0.03; // Camera rotation speed radians per key press
 
-			var UNIT_CUBE_SIZE 		= 10;
-			var CUBE_SPACE 			= 1;
-			var CUBE_ROTATE_STEPS   = 64; // Number of rotation steps for a 90 degree turn.
-			var CUBE_ROTATE_SPEED 	= Math.PI / (2*CUBE_ROTATE_STEPS); // Cube rotation speed radians per frame.
-			var FRAME_TIME			= 1000 / 60; // 60 frames per second
 
 			var ORIGIN = new THREE.Vector3(0, 0, 0); 
 			var XAXIS = new THREE.Vector3(1, 0, 0);		// Rotate on this axis for pitch. Translate to move right (left).
@@ -48,6 +50,16 @@
 				38: "up", 
 				39: "right", 
 				40: "down", 
+				48: "0", 
+				49: "1", 
+				50: "2", 
+				51: "3", 
+				52: "4", 
+				53: "5", 
+				54: "6", 
+				55: "7", 
+				56: "8", 
+				57: "9", 
 				65: "a", 
 				66: "b",
 				68: "d",
@@ -66,6 +78,10 @@
 			var camPolarAngle = CAM_START_POLAR; 				// Horizontal rotation (longitude) in radians
 			var camAzimuthAngle = CAM_START_AZIMUTH;			// Vertical rotation (latitude) in radians
 			var camRadius = CAM_START_RADIUS;					// Distance from origin (0,0,0) to camera
+
+			// Other variables.
+			var sliceArray = [];
+			var rotAxis = new THREE.Vector3();
 
 			// Respond to key presses.
 			$("body").keydown(function (event) {
@@ -105,45 +121,87 @@
 						camRadius = MAX_CAM_RADIUS; 
 					}
 				}
-				// Use shift key to reverse face rotation.
+				// Use shift key to reverse face or slice rotation direction.
 				var rotDir = 1;
 				if (event.shiftKey) {
 					rotDir = -1;
 				} else {
 					rotDir = 1;
 				}
-				// Use f, r, u, l, b, d keys to trigger face rotations.
-				if ( multiCube3.stable ) {		// Only trigger rotation if previous rotation is complete.
+				// Use x, y, and z to identify axis for slice rotation.
+				if (keyNames[event.keyCode] === "x") {
+					sliceArray = multiCubeN.sliceX;
+					rotAxis = XAXIS;
+					console.log("x-axis" + sliceArray);
+				} 
+				if (keyNames[event.keyCode] === "y") {
+					sliceArray = multiCubeN.sliceY;
+					rotAxis = YAXIS;
+					console.log("y-axis" + sliceArray);
+				} 
+				if (keyNames[event.keyCode] === "z") {
+					sliceArray = multiCubeN.sliceZ;
+					rotAxis = ZAXIS;
+					console.log("z-axis" + sliceArray);
+				} 						
+				// Only trigger rotation if previous rotation is complete.
+				if ( multiCubeN.stable ) {		
+					// Use f, r, u, l, b, d keys to trigger face rotations.
 					if (keyNames[event.keyCode] === "f") {
-						// multiCube3.rotateFacePartial( multiCube3.faceF, ZAXIS, -rotDir * CUBE_ROTATE_SPEED );
-						console.log(multiCube3.stable);
-						multiCube3.rotateFaceRecur( multiCube3.faceF, ZAXIS, -rotDir * CUBE_ROTATE_SPEED, FRAME_TIME, CUBE_ROTATE_STEPS);
+						multiCubeN.rotateFaceRecur( multiCubeN.faceF, ZAXIS, -rotDir * CUBE_ROTATE_SPEED, FRAME_TIME, CUBE_ROTATE_STEPS);
 					}
 					if (keyNames[event.keyCode] === "r") {
-						// multiCube3.rotateFacePartial( multiCube3.faceR, XAXIS, -rotDir * CUBE_ROTATE_SPEED );
-						multiCube3.rotateFaceRecur( multiCube3.faceR, XAXIS, -rotDir * CUBE_ROTATE_SPEED, FRAME_TIME, CUBE_ROTATE_STEPS);
+						multiCubeN.rotateFaceRecur( multiCubeN.faceR, XAXIS, -rotDir * CUBE_ROTATE_SPEED, FRAME_TIME, CUBE_ROTATE_STEPS);
 					}
 					if (keyNames[event.keyCode] === "u") {
-						// multiCube3.rotateFacePartial( multiCube3.faceU, YAXIS, -rotDir * CUBE_ROTATE_SPEED );
-						multiCube3.rotateFaceRecur( multiCube3.faceU, YAXIS, -rotDir * CUBE_ROTATE_SPEED, FRAME_TIME, CUBE_ROTATE_STEPS);
+						multiCubeN.rotateFaceRecur( multiCubeN.faceU, YAXIS, -rotDir * CUBE_ROTATE_SPEED, FRAME_TIME, CUBE_ROTATE_STEPS);
 					}
 					if (keyNames[event.keyCode] === "l") {
-						// multiCube3.rotateFacePartial( multiCube3.faceL, XAXIS, rotDir * CUBE_ROTATE_SPEED );
-						multiCube3.rotateFaceRecur( multiCube3.faceL, XAXIS, rotDir * CUBE_ROTATE_SPEED, FRAME_TIME, CUBE_ROTATE_STEPS);
+						multiCubeN.rotateFaceRecur( multiCubeN.faceL, XAXIS, rotDir * CUBE_ROTATE_SPEED, FRAME_TIME, CUBE_ROTATE_STEPS);
 					}
 					if (keyNames[event.keyCode] === "b") {
-						// multiCube3.rotateFacePartial( multiCube3.faceB, ZAXIS, rotDir * CUBE_ROTATE_SPEED );
-						multiCube3.rotateFaceRecur( multiCube3.faceB, ZAXIS, rotDir * CUBE_ROTATE_SPEED, FRAME_TIME, CUBE_ROTATE_STEPS);
+						multiCubeN.rotateFaceRecur( multiCubeN.faceB, ZAXIS, rotDir * CUBE_ROTATE_SPEED, FRAME_TIME, CUBE_ROTATE_STEPS);
 					}
 					if (keyNames[event.keyCode] === "d") {
-						// multiCube3.rotateFacePartial( multiCube3.faceD, YAXIS, rotDir * CUBE_ROTATE_SPEED );
-						multiCube3.rotateFaceRecur( multiCube3.faceD, YAXIS, rotDir * CUBE_ROTATE_SPEED, FRAME_TIME, CUBE_ROTATE_STEPS);
+						multiCubeN.rotateFaceRecur( multiCubeN.faceD, YAXIS, rotDir * CUBE_ROTATE_SPEED, FRAME_TIME, CUBE_ROTATE_STEPS);
 					}
-					// Use space to trigger face updates.
+					// Use number keys to trigger slice rotations.
+					if (keyNames[event.keyCode] === "0") {
+						multiCubeN.rotateFaceRecur( sliceArray[0], rotAxis, rotDir * CUBE_ROTATE_SPEED, FRAME_TIME, CUBE_ROTATE_STEPS);
+					}
+					if (keyNames[event.keyCode] === "1") {
+						multiCubeN.rotateFaceRecur( sliceArray[1], rotAxis, rotDir * CUBE_ROTATE_SPEED, FRAME_TIME, CUBE_ROTATE_STEPS);
+					}
+					if (keyNames[event.keyCode] === "2" && multiCubeN.multiCubeSize > 2) {
+						multiCubeN.rotateFaceRecur( sliceArray[2], rotAxis, rotDir * CUBE_ROTATE_SPEED, FRAME_TIME, CUBE_ROTATE_STEPS);
+					}
+					if (keyNames[event.keyCode] === "3" && multiCubeN.multiCubeSize > 3) {
+						multiCubeN.rotateFaceRecur( sliceArray[3], rotAxis, rotDir * CUBE_ROTATE_SPEED, FRAME_TIME, CUBE_ROTATE_STEPS);
+					}
+					if (keyNames[event.keyCode] === "4" && multiCubeN.multiCubeSize > 4) {
+						multiCubeN.rotateFaceRecur( sliceArray[4], rotAxis, rotDir * CUBE_ROTATE_SPEED, FRAME_TIME, CUBE_ROTATE_STEPS);
+					}
+					if (keyNames[event.keyCode] === "5" && multiCubeN.multiCubeSize > 5) {
+						multiCubeN.rotateFaceRecur( sliceArray[5], rotAxis, rotDir * CUBE_ROTATE_SPEED, FRAME_TIME, CUBE_ROTATE_STEPS);
+					}
+					if (keyNames[event.keyCode] === "6" && multiCubeN.multiCubeSize > 6) {
+						multiCubeN.rotateFaceRecur( sliceArray[6], rotAxis, rotDir * CUBE_ROTATE_SPEED, FRAME_TIME, CUBE_ROTATE_STEPS);
+					}
+					if (keyNames[event.keyCode] === "7" && multiCubeN.multiCubeSize > 7) {
+						multiCubeN.rotateFaceRecur( sliceArray[7], rotAxis, rotDir * CUBE_ROTATE_SPEED, FRAME_TIME, CUBE_ROTATE_STEPS);
+					}
+					if (keyNames[event.keyCode] === "8" && multiCubeN.multiCubeSize > 8) {
+						multiCubeN.rotateFaceRecur( sliceArray[8], rotAxis, rotDir * CUBE_ROTATE_SPEED, FRAME_TIME, CUBE_ROTATE_STEPS);
+					}
+					if (keyNames[event.keyCode] === "9" && multiCubeN.multiCubeSize > 9) {
+						multiCubeN.rotateFaceRecur( sliceArray[9], rotAxis, rotDir * CUBE_ROTATE_SPEED, FRAME_TIME, CUBE_ROTATE_STEPS);
+					}
+					// Use space to trigger face and slice updates.
 					if (keyNames[event.keyCode] === "space") {
-						multiCube3.snapToGrid();
-						multiCube3.updateCubeNumAt();
-						multiCube3.updateFaces();
+						multiCubeN.snapToGrid();
+						multiCubeN.updateCubeNumAt();
+						multiCubeN.updateFaces();
+						multiCubeN.updateSlices();
 					}
 				}
 			})
@@ -189,9 +247,9 @@
 			scene.add(planeGround);
 			planeGround.receiveShadow = true; 
 
-			// Create the MultiCube3 and add it to the scene.			
-			multiCube3 = new MultiCube3( UNIT_CUBE_SIZE, CUBE_SPACE ); 
-			multiCube3.addToScene( scene );
+			// Create the MultiCubeN and add it to the scene.			
+			multiCubeN = new MultiCubeN( NUM_CUBE, UNIT_CUBE_SIZE, CUBE_SPACE ); 
+			multiCubeN.addToScene( scene );
 
 			// Create a renderer.
 			var renderer = new THREE.WebGLRenderer(); 
