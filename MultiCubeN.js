@@ -18,18 +18,27 @@
 // 		0  1  2
 //
 // Faces: (Center loc # is for 3x3x3 example)
-//  |  Face  | Face  | Center | Center |
-//  |  Name  | Array | Loc #  | Color  |
-//  |--------|-------|--------|--------|
-//  | Front  | faceF |   22   |  Blue  |
-//  | Back   | faceB |    4   |  Green |
-//  | Left   | faceL |   12   | Orange |
-//  | Right  | faceR |   14   |  Red   |
-//  |  Up    | faceU |   15   | Yellow |
-//  | Down   | faceD |   10   | White  |
-//  |--------|-------|--------|--------|
+//  |  Face  | Face  | Center | Center | Slice  |
+//  |  Name  | Array | Loc #  | Color  | ID[#]  |
+//  |--------|-------|--------|--------|--------|
+//  | Back   | faceB |    4   |  Green | Z[0]   |
+//  | Front  | faceF |   22   |  Blue  | Z[N-1] |
+//  | Down   | faceD |   10   | White  | Y[0]   |
+//  |  Up    | faceU |   15   | Yellow | Y[N-1] |
+//  | Left   | faceL |   12   | Orange | X[0]   |
+//  | Right  | faceR |   14   |  Red   | X[N-1] |
+//  |--------|-------|--------|--------|--------|
 
 var MultiCubeN = function ( multiCubeSize, unitCubeSize, unitCubeSpace ) {
+	// Set default values.
+	// this.position = new THREE.Vector3(0, 0, 0);  // FIX ME Add this later to allow MultiCubeN away from origin.
+	this.xAxis = new THREE.Vector3(1, 0, 0);		// Rotate on this axis for pitch. Translate to move right (left).
+	this.yAxis = new THREE.Vector3(0, 1, 0);		// Rotate on this axis for yaw. Translate to move up (down).
+	this.zAxis = new THREE.Vector3(0, 0, 1);		// Rotate on this for roll. Translate to move backward (forward).
+	this.cubeRotateSteps = 64; 						// Number of rotation steps to animate a 90 degree turn.
+	this.frameUpdateTime = 1000 / 60; 				// 60 frames per second
+
+	// Initialize properties
 	this.multiCubeSize = multiCubeSize; 		// 3 = 3x3x3, 4 = 4x4x4, etc.
 	this.numUnits = multiCubeSize * multiCubeSize * multiCubeSize;
 	this.lastUnit = this.numUnits - 1;
@@ -37,6 +46,8 @@ var MultiCubeN = function ( multiCubeSize, unitCubeSize, unitCubeSpace ) {
 	this.unitCubeSpace = unitCubeSpace; 
 	this.gridPitch = unitCubeSize + unitCubeSpace;
 	this.stable = true;
+
+	// Create unit cubes
 	this.unitGeo = new THREE.BoxGeometry( unitCubeSize, unitCubeSize, unitCubeSize );
 	this.unitGeo.faces[0].color.setHex( 0xff0000 );	// Red
 	this.unitGeo.faces[1].color.setHex( 0xff0000 ); // Red
@@ -81,7 +92,6 @@ var MultiCubeN = function ( multiCubeSize, unitCubeSize, unitCubeSpace ) {
 		}; 
 	}; 
 	this.updateSlices();
-	this.updateFaces();
 }; 
 
 // Define a method for adding a MultiCubeN to a scene.
@@ -89,6 +99,42 @@ MultiCubeN.prototype.addToScene = function( scene ) {
 	for (var i = 0; i <= this.lastUnit; i++) {
 		scene.add(this.cubes[i]);
 	};
+};
+
+// Define a method for rotating a slice 90 degrees.
+//   axisID: 	"X", "Y", or "Z" to identify axis of rotation.
+//   slideNum:  Number of slice to be rotated from 0 to N-1 from back/left/bottom to front/right/top.
+//	 rotDir: 	1 = clockwise; -1 = counterclockwise as viewed from back/left/bottom.
+MultiCubeN.prototype.rotateSlice90 = function( axisID, sliceNum, rotDir ) {
+	var _angle = 0;
+	var _axis = new THREE.Vector3(0, 0, 0);
+	var _sliceNum = 0;
+	var _slice = [];
+
+	// Force _sliceNum to be an integer from 0 to N-1.
+	if (( sliceNum >= 0 ) && ( sliceNum <= this.multiCubeSize - 1 )) {
+		_sliceNum = Math.round(sliceNum);
+	} else {
+		_sliceNum = 0;
+	}
+
+	// Setup _slice and _axis for rotation.
+	if (axisID === "X") {
+		_slice = this.sliceX[_sliceNum];
+		_axis = this.xAxis; 
+	} else if (axisID === "Y") {
+		_slice = this.sliceY[_sliceNum];
+		_axis = this.yAxis; 
+	} else {
+		_slice = this.sliceZ[_sliceNum];
+		_axis = this.zAxis;	// Default to Z-axis.
+	}
+
+	// Calculate angle per rotation step.
+	_angle = rotDir * Math.PI / ( 2 * this.cubeRotateSteps );
+
+	// Perform recursive rotation.
+	this.rotateSliceRecur( _slice, _axis, _angle, this.frameUpdateTime, this.cubeRotateSteps );
 };
 
 // Define a recursive method for rotating a slice using a multi-step animation.
@@ -109,7 +155,6 @@ MultiCubeN.prototype.rotateSliceRecur = function( slice, axis, angle, delay, cou
 		this.snapToGrid();
 		this.updateCubeNumAt();
 		this.updateSlices();
-		this.updateFaces();
 		this.stable = true;
 	}
 };
@@ -157,8 +202,7 @@ MultiCubeN.prototype.snapToGrid = function() {
 
 // Define a method to determine location # for each cube and update cubeNumAt 
 //    array accordingly.
-// Assumes unit cube positions have already been snapped to grid so that unit 
-//    cube positions should be integer multiples of this.gridPitch.
+// Assumes this.snapToGrid has already been run.
 MultiCubeN.prototype.updateCubeNumAt = function() {
 	var gridX = 0;  	// X grid position from 0 to N-1.
 	var gridY = 0;  	// Y grid position from 0 to N-1.
@@ -173,26 +217,24 @@ MultiCubeN.prototype.updateCubeNumAt = function() {
 	};
 };
 
-// Define a method to update all slice arrays using cubeNumAt.
+// Define a method to update all sliceX/Y/Z and faceF/U/R/B/D/L arrays.
 // Valid for any value of multiCubeSize.
 // Assumes this.updateCubeNumAt has already been run.
 MultiCubeN.prototype.updateSlices = function() {
+	// Update sliceX/Y/Z arrays using cubeNumAt.
 	var i = x = y = z = 0;
 	for (z = 0; z <= this.multiCubeSize - 1; z++) {
 		for (y = 0; y <= this.multiCubeSize - 1; y++) {
 			for (x = 0; x <= this.multiCubeSize - 1; x++) {
-				this.sliceX[x][y][z] = this.cubeNumAt[i];
-				this.sliceY[y][z][x] = this.cubeNumAt[i];
-				this.sliceZ[z][y][x] = this.cubeNumAt[i];
+				this.sliceX[x][y][z] = this.cubeNumAt[i];	// Slices in X axis from left to right.
+				this.sliceY[y][z][x] = this.cubeNumAt[i];	// Slices in Y axis from down to up.
+				this.sliceZ[z][y][x] = this.cubeNumAt[i];	// Slices in Z axis from back to front.
 				i++;
 			};
 		};
 	};
-};
 
-// Define a method to update all 6 face arrays using cubeNumAt.
-// Assumes this.updateCubeNumAt and this.updateSlices have already been run.
-MultiCubeN.prototype.updateFaces = function() {
+	// Update faceF/U/R/B/D/L arrays from sliceX/Y/Z arrays.
 	this.faceF = this.sliceZ[this.multiCubeSize - 1];	// Define front face (blue).
 	this.faceU = this.sliceY[this.multiCubeSize - 1]; 	// Define up face (yellow).
 	this.faceR = this.sliceX[this.multiCubeSize - 1]; 	// Define right face (red).
