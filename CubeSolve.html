@@ -16,27 +16,27 @@
 		<script src="http://127.0.0.1:8887/MultiCubeN.js"></script>
 		<script>
 			// Define constants.
-			var NUM_CUBE			= 5;  // Specify multi-cube size (# of unit cubes per edge, min=2, max=10)
+			var NUM_CUBE			= 4;  				// Specify multi-cube size (# of unit cubes per edge, min=2, max=10)
 
-			var UNIT_CUBE_SIZE 		= 10;
-			var CUBE_SPACE 			= 1;
-			var CUBE_ROTATE_STEPS   = 64; // Number of rotation steps for a 90 degree turn.
+			var UNIT_CUBE_SIZE 		= 20;
+			var CUBE_SPACE 			= 2;
+			var CUBE_ROTATE_STEPS   = 64; 				// Number of rotation steps for a 90 degree turn.
 			var CUBE_ROTATE_SPEED 	= Math.PI / (2*CUBE_ROTATE_STEPS); // Cube rotation speed radians per frame.
-			var FRAME_TIME			= 1000 / 60; // 60 frames per second
-			var RENDER_DISTANCE 	= 2000;		// Render distance and grid size in pixels
+			var CUBE_POSITION 		= new THREE.Vector3(0, 0, 0);
+			var FRAME_TIME			= 1000 / 60; 		// 60 frames per second
+			var RENDER_DISTANCE 	= 5000;				// Render distance and grid size in pixels
 
-			var GRID_SPACE 			= 50;	// Grid space in pixels
-			var GRID_POSITION_Y 	= -100;	// Grid position below origin.
+			var GRID_SPACE 			= 100;				// Grid space in pixels
+			var GRID_POSITION_Y 	= -200;				// Grid position below origin.
 
-			var CAM_ZOOM_SPEED 		= 10;	// Rate of camera radius change.
-			var MIN_CAM_RADIUS 		= 20; 	// Minimum camera distance from origin (0,0,0).
-			var CAM_START_RADIUS 	= 200;  // Starting camera distance from origin (0,0,0).
-			var MAX_CAM_RADIUS 		= 300; 	// Maximum camera distance from origin (0,0,0).
+			var CAM_ZOOM_SPEED 		= 20;				// Rate of camera radius change.
+			var MIN_CAM_RADIUS 		= 100; 				// Minimum camera distance from origin (0,0,0).
+			var CAM_START_RADIUS 	= 400;  			// Starting camera distance from origin (0,0,0).
+			var MAX_CAM_RADIUS 		= 2000; 			// Maximum camera distance from origin (0,0,0).
 
-			var CAM_START_POLAR 	= Math.PI / 12;
-			var CAM_START_AZIMUTH 	= Math.PI / 12; 
-			var CAM_ROTATE_SPEED 	= 0.03; // Camera rotation speed radians per key press
-
+			var CAM_START_POLAR 	= Math.PI / 8;
+			var CAM_START_AZIMUTH 	= Math.PI / 8; 
+			var CAM_ROTATE_SPEED 	= 0.03; 			// Camera rotation speed radians per key press
 
 			var ORIGIN = new THREE.Vector3(0, 0, 0); 
 			var XAXIS = new THREE.Vector3(1, 0, 0);		// Rotate on this axis for pitch. Translate to move right (left).
@@ -92,14 +92,14 @@
 					camPolarAngle += CAM_ROTATE_SPEED;
 				}
 				if (keyNames[event.keyCode] === "up") {
-					if ( camAzimuthAngle < Math.PI / 2 ) {
+					if ( camAzimuthAngle <= (Math.PI / 2) - CAM_ROTATE_SPEED ) {
 						camAzimuthAngle += CAM_ROTATE_SPEED;
 					} else {
 						camAzimuthAngle = Math.PI / 2; 
 					}
 				}
 				if (keyNames[event.keyCode] === "down") {
-					if ( camAzimuthAngle > -Math.PI / 2 ) {
+					if ( camAzimuthAngle >= CAM_ROTATE_SPEED - (Math.PI / 2) ) {
 						camAzimuthAngle -= CAM_ROTATE_SPEED;
 					} else {
 						camAzimuthAngle = -Math.PI / 2; 
@@ -210,7 +210,8 @@
 
 			// Create a scene and add fog to it
 			var scene = new THREE.Scene();
-			scene.fog = new THREE.FogExp2( 0xa8d7ff, 0.0008 );
+			scene.fog = new THREE.FogExp2( 0xa8d7ff, 0.0003 );
+			// scene.fog = new THREE.FogExp2( 0xa8d7ff, 0.0008 );
 
 			// Let there be light!
 			var sunLight = new THREE.DirectionalLight( 0xffffff, 0.2 );
@@ -245,6 +246,7 @@
 			// Create the MultiCubeN and add it to the scene.			
 			multiCubeN = new MultiCubeN( NUM_CUBE, UNIT_CUBE_SIZE, CUBE_SPACE ); 
 			multiCubeN.addToScene( scene );
+			multiCubeN.setPosition(CUBE_POSITION);
 
 			// Create a renderer.
 			var renderer = new THREE.WebGLRenderer(); 

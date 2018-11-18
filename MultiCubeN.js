@@ -31,7 +31,7 @@
 
 var MultiCubeN = function ( multiCubeSize, unitCubeSize, unitCubeSpace ) {
 	// Set default values.
-	// this.position = new THREE.Vector3(0, 0, 0);  // FIX ME Add this later to allow MultiCubeN away from origin.
+	this.position = new THREE.Vector3(0, 0, 0);  	// FIX ME Add this later to allow MultiCubeN away from origin.
 	this.xAxis = new THREE.Vector3(1, 0, 0);		// Rotate on this axis for pitch. Translate to move right (left).
 	this.yAxis = new THREE.Vector3(0, 1, 0);		// Rotate on this axis for yaw. Translate to move up (down).
 	this.zAxis = new THREE.Vector3(0, 0, 1);		// Rotate on this for roll. Translate to move backward (forward).
@@ -82,9 +82,9 @@ var MultiCubeN = function ( multiCubeSize, unitCubeSize, unitCubeSpace ) {
 				this.sliceY[z][y][x] = 0;
 				this.sliceZ[z][y][x] = 0;
 				this.cubes.push(new THREE.Mesh( this.unitGeo, this.unitMat ));
-				this.cubes[i].position.x = (x + 0.5 - 0.5 * this.multiCubeSize) * this.gridPitch;
-				this.cubes[i].position.y = (y + 0.5 - 0.5 * this.multiCubeSize) * this.gridPitch;
-				this.cubes[i].position.z = (z + 0.5 - 0.5 * this.multiCubeSize) * this.gridPitch;
+				this.cubes[i].position.x = (x + 0.5 - 0.5 * this.multiCubeSize) * this.gridPitch + this.position.x;
+				this.cubes[i].position.y = (y + 0.5 - 0.5 * this.multiCubeSize) * this.gridPitch + this.position.y;
+				this.cubes[i].position.z = (z + 0.5 - 0.5 * this.multiCubeSize) * this.gridPitch + this.position.z;
 				this.cubes[i].castShadow = true;
 				this.cubeNumAt[i] = i;
 				i++;
@@ -100,6 +100,20 @@ MultiCubeN.prototype.addToScene = function( scene ) {
 		scene.add(this.cubes[i]);
 	};
 };
+
+MultiCubeN.prototype.setPosition = function( newPosition ) {
+	var deltaX = newPosition.x - this.position.x;
+	var deltaY = newPosition.y - this.position.y;
+	var deltaZ = newPosition.z - this.position.z;
+	this.position = newPosition;
+
+	// Update unit cube positions.
+	for (var i=0; i<=this.lastUnit; i++) {
+		this.cubes[i].position.x += deltaX;
+		this.cubes[i].position.y += deltaY;
+		this.cubes[i].position.z += deltaZ;
+	};
+}
 
 // Define a method for rotating a slice 90 degrees.
 //   axisID: 	"X", "Y", or "Z" to identify axis of rotation.
@@ -163,12 +177,14 @@ MultiCubeN.prototype.rotateSliceRecur = function( slice, axis, angle, delay, cou
 MultiCubeN.prototype.rotateSlicePartial = function( slice, axis, angle ) {
 	var i = j = k = 0;
 	var q = new THREE.Quaternion();
-	q.setFromAxisAngle(axis, angle);
+	q.setFromAxisAngle(axis, angle);	// Represent the desired rotation as a quaternion.
 	for (i = 0; i <= this.multiCubeSize - 1; i++) {
 		for (j = 0; j <= this.multiCubeSize - 1; j++) {
-				k = slice[i][j];
-				this.cubes[k].applyQuaternion(q);
-				this.cubes[k].position.applyQuaternion(q);
+				k = slice[i][j];							// Get index of unit cube to be rotated.
+				this.cubes[k].applyQuaternion(q);			// Update unit cube orientation (rotation).
+				this.cubes[k].position.sub(this.position); 	// Subtract origin of multicube from unit cube position.
+				this.cubes[k].position.applyQuaternion(q); 	// Apply rotation to unit cube position.
+				this.cubes[k].position.add(this.position); 	// Add origin of multicube back into unit cube position.				
 		};
 	};
 }; 
@@ -183,12 +199,12 @@ MultiCubeN.prototype.snapToGrid = function() {
 	var gridRotZ = 0; 	// Z rotation from -1 to +2 with step size of 90 degrees.
 	for (var i=0; i<=this.lastUnit; i++) {
 		// Snap positions to grid.
-		gridX = Math.round(( this.cubes[i].position.x / this.gridPitch ) + 0.5 * (this.multiCubeSize - 1)); 
-		gridY = Math.round(( this.cubes[i].position.y / this.gridPitch ) + 0.5 * (this.multiCubeSize - 1)); 
-		gridZ = Math.round(( this.cubes[i].position.z / this.gridPitch ) + 0.5 * (this.multiCubeSize - 1)); 
-		this.cubes[i].position.x = this.gridPitch * (gridX + 0.5 * (1 - this.multiCubeSize));
-		this.cubes[i].position.y = this.gridPitch * (gridY + 0.5 * (1 - this.multiCubeSize));
-		this.cubes[i].position.z = this.gridPitch * (gridZ + 0.5 * (1 - this.multiCubeSize));
+		gridX = Math.round((( this.cubes[i].position.x - this.position.x ) / this.gridPitch ) + 0.5 * (this.multiCubeSize - 1)); 
+		gridY = Math.round((( this.cubes[i].position.y - this.position.y ) / this.gridPitch ) + 0.5 * (this.multiCubeSize - 1)); 
+		gridZ = Math.round((( this.cubes[i].position.z - this.position.z ) / this.gridPitch ) + 0.5 * (this.multiCubeSize - 1)); 
+		this.cubes[i].position.x = this.gridPitch * (gridX + 0.5 * (1 - this.multiCubeSize)) + this.position.x;
+		this.cubes[i].position.y = this.gridPitch * (gridY + 0.5 * (1 - this.multiCubeSize)) + this.position.y;
+		this.cubes[i].position.z = this.gridPitch * (gridZ + 0.5 * (1 - this.multiCubeSize)) + this.position.z;
 
 		// Snap rotations to X/Y/Z axes.
 		gridRotX = Math.round(this.cubes[i].rotation.x / (Math.PI / 2)); 
@@ -209,9 +225,9 @@ MultiCubeN.prototype.updateCubeNumAt = function() {
 	var gridZ = 0;  	// Z grid position from 0 to N-1.
 	var locNum = 0;		// Location # from 0 to N^3 - 1.
 	for (var i=0; i<=this.lastUnit; i++) {
-		gridX = ( this.cubes[i].position.x / this.gridPitch ) + 0.5 * (this.multiCubeSize - 1); 
-		gridY = ( this.cubes[i].position.y / this.gridPitch ) + 0.5 * (this.multiCubeSize - 1); 
-		gridZ = ( this.cubes[i].position.z / this.gridPitch ) + 0.5 * (this.multiCubeSize - 1); 
+		gridX = (( this.cubes[i].position.x - this.position.x ) / this.gridPitch ) + 0.5 * (this.multiCubeSize - 1); 
+		gridY = (( this.cubes[i].position.y - this.position.y ) / this.gridPitch ) + 0.5 * (this.multiCubeSize - 1); 
+		gridZ = (( this.cubes[i].position.z - this.position.z ) / this.gridPitch ) + 0.5 * (this.multiCubeSize - 1); 
 		locNum = Math.round(this.multiCubeSize*this.multiCubeSize*gridZ + this.multiCubeSize*gridY + gridX);
 		this.cubeNumAt[locNum] = i;
 	};
