@@ -35,7 +35,7 @@ var MultiCubeN = function ( multiCubeSize, unitCubeSize, unitCubeSpace ) {
 	this.xAxis = new THREE.Vector3(1, 0, 0);		// Rotate on this axis for pitch. Translate to move right (left).
 	this.yAxis = new THREE.Vector3(0, 1, 0);		// Rotate on this axis for yaw. Translate to move up (down).
 	this.zAxis = new THREE.Vector3(0, 0, 1);		// Rotate on this for roll. Translate to move backward (forward).
-	this.cubeRotateSteps = 64; 						// Number of rotation steps to animate a 90 degree turn.
+	this.cubeRotateSteps = 32; 						// Number of rotation steps to animate a 90 degree turn.
 	this.frameUpdateTime = 1000 / 60; 				// 60 frames per second
 
 	// Initialize properties
@@ -151,6 +151,40 @@ MultiCubeN.prototype.rotateSlice90 = function( axisID, sliceNum, rotDir ) {
 	this.rotateSliceRecur( _slice, _axis, _angle, this.frameUpdateTime, this.cubeRotateSteps );
 };
 
+// Define a recursive method for mixing up a multi-cube by repeatedly doing random 90 degree rotations.
+MultiCubeN.prototype.mixUp = function( count ) {
+	var _this = this;	// We need this to make this.mixUp work inside the setTimeout context.
+	var axisNum, axisID, delay, sliceNum, rotDir, timeoutID;
+
+	if (count > 0) {
+		// Choose random axis.
+		axisNum = Math.floor( 3 * Math.random() );
+		if (axisNum == 1) {
+			axisID = "X";
+		} else if (axisNum == 2) {
+			axisID = "Y";
+		} else {
+			axisID = "Z";
+		}
+
+		sliceNum = Math.floor( this.multiCubeSize * Math.random() ); 	// Choose random sliceNum from 0 to N-1.
+
+		// Choose random rotation direction (1 or -1).
+		if ( Math.random() > 0.5 ) {
+			rotDir = 1; 
+		} else {
+			rotDir = -1;
+		}
+
+		delay = 1.1 * _this.frameUpdateTime * _this.cubeRotateSteps; 	// Add 5% pause between 90 degree rotations.
+
+		this.rotateSlice90( axisID, sliceNum, rotDir ); 
+		timeoutID = setTimeout( function() {
+			_this.mixUp( count - 1 );
+		}, delay);
+	};
+};
+
 // Define a recursive method for rotating a slice using a multi-step animation.
 //   slice  = slice array (e.g. this.sliceZ[n], this.faceF, this.faceL, etc) to be rotated
 //   axis  = real world axis to rotate around (normally X, Y, or Z)
@@ -163,7 +197,7 @@ MultiCubeN.prototype.rotateSliceRecur = function( slice, axis, angle, delay, cou
 		this.stable = false; 
 		this.rotateSlicePartial( slice, axis, angle );
 		var timeoutID = setTimeout( function() {
-			_this.rotateSliceRecur( slice, axis, angle, delay, count-1 );
+			_this.rotateSliceRecur( slice, axis, angle, delay, count - 1 );
 		}, delay);
 	} else {
 		this.snapToGrid();

@@ -18,12 +18,11 @@
 			// Define constants.
 			var NUM_CUBE			= 4;  				// Specify multi-cube size (# of unit cubes per edge, min=2, max=10)
 
+			var MIXUP_COUNT 		= 5; 				// Number of rotations to use in mixing up cube.
+
 			var UNIT_CUBE_SIZE 		= 20;
 			var CUBE_SPACE 			= 2;
-			var CUBE_ROTATE_STEPS   = 64; 				// Number of rotation steps for a 90 degree turn.
-			var CUBE_ROTATE_SPEED 	= Math.PI / (2*CUBE_ROTATE_STEPS); // Cube rotation speed radians per frame.
 			var CUBE_POSITION 		= new THREE.Vector3(0, 0, 0);
-			var FRAME_TIME			= 1000 / 60; 		// 60 frames per second
 			var RENDER_DISTANCE 	= 5000;				// Render distance and grid size in pixels
 
 			var GRID_SPACE 			= 100;				// Grid space in pixels
@@ -197,6 +196,9 @@
 					if (keyNames[event.keyCode] === "f") {
 						axisID = "Z";
 						multiCubeN.rotateSlice90( axisID, multiCubeN.multiCubeSize - 1, -rotDir );
+					}
+					if (keyNames[event.keyCode] === "space") {
+						multiCubeN.mixUp( MIXUP_COUNT );
 					}
 				}
 			});
