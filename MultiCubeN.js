@@ -30,8 +30,9 @@
 //  |--------|-------|--------|--------|--------|
 
 
-var UnitCube = function ( faceWidth, edgeWidth ) {
-	var edgeCenter = ( faceWidth + edgeWidth ) / 2;
+var UnitCube = function ( cubeWidth, edgeWidth ) {
+	var faceWidth  = cubeWidth - 2 * edgeWidth; 
+	var edgeCenter = ( cubeWidth - edgeWidth ) / 2;
 	var redMesh    = new THREE.Mesh( new THREE.BoxGeometry( edgeWidth, faceWidth, faceWidth), new THREE.MeshStandardMaterial( { color: 0xff0000 } ));
 	var orangeMesh = new THREE.Mesh( new THREE.BoxGeometry( edgeWidth, faceWidth, faceWidth), new THREE.MeshStandardMaterial( { color: 0xff8c00 } ));
 	var yellowMesh = new THREE.Mesh( new THREE.BoxGeometry( faceWidth, edgeWidth, faceWidth), new THREE.MeshStandardMaterial( { color: 0xffff00 } ));
@@ -41,7 +42,7 @@ var UnitCube = function ( faceWidth, edgeWidth ) {
 
 	var geoX = new THREE.BoxGeometry( faceWidth, edgeWidth, edgeWidth );
 	var geoY = new THREE.BoxGeometry( edgeWidth, faceWidth, edgeWidth );
-	var geoZ = new THREE.BoxGeometry( edgeWidth, edgeWidth, faceWidth + 2*edgeWidth );  // Add extra length in Z to fill in corners
+	var geoZ = new THREE.BoxGeometry( edgeWidth, edgeWidth, cubeWidth );  // Add extra length in Z to fill in corners
 	var blackMat = new THREE.MeshStandardMaterial( { color: 0x000000 } );
 	var edge01 = new THREE.Mesh( geoX, blackMat );
 	var edge02 = new THREE.Mesh( geoX, blackMat );
@@ -105,7 +106,7 @@ var UnitCube = function ( faceWidth, edgeWidth ) {
 	return( unitCubeGroup );
 };
 
-var MultiCubeN = function ( multiCubeSize, unitCubeSize, unitCubeSpace ) {
+var MultiCubeN = function ( multiCubeSize, unitCubeSize, unitCubeSpace, unitCubeBorder ) {
 	// Set default values.
 	this.position = new THREE.Vector3(0, 0, 0);  	// FIX ME Add this later to allow MultiCubeN away from origin.
 	this.xAxis = new THREE.Vector3(1, 0, 0);		// Rotate on this axis for pitch. Translate to move right (left).
@@ -120,25 +121,11 @@ var MultiCubeN = function ( multiCubeSize, unitCubeSize, unitCubeSpace ) {
 	this.lastUnit = this.numUnits - 1;
 	this.unitCubeSize = unitCubeSize;
 	this.unitCubeSpace = unitCubeSpace; 
+	this.unitCubeBorder = unitCubeBorder; 
 	this.gridPitch = unitCubeSize + unitCubeSpace;
 	this.stable = true;
 
 	// Create unit cubes
-	this.unitGeo = new THREE.BoxGeometry( unitCubeSize, unitCubeSize, unitCubeSize );
-	this.unitGeo.faces[0].color.setHex( 0xff0000 );	// Red
-	this.unitGeo.faces[1].color.setHex( 0xff0000 ); // Red
-	this.unitGeo.faces[2].color.setHex( 0xff8c00 ); // Orange
-	this.unitGeo.faces[3].color.setHex( 0xff8c00 ); // Orange
-	this.unitGeo.faces[4].color.setHex( 0xffff00 ); // Yellow
-	this.unitGeo.faces[5].color.setHex( 0xffff00 ); // Yellow
-	this.unitGeo.faces[6].color.setHex( 0xffffff ); // White
-	this.unitGeo.faces[7].color.setHex( 0xffffff ); // White
-	this.unitGeo.faces[8].color.setHex( 0x0000ff ); // Blue
-	this.unitGeo.faces[9].color.setHex( 0x0000ff ); // Blue
-	this.unitGeo.faces[10].color.setHex( 0x00cc11 ); // Green
-	this.unitGeo.faces[11].color.setHex( 0x00cc11 ); // Green
-	this.unitMat = new THREE.MeshStandardMaterial( { vertexColors: THREE.FaceColors } );
-
 	this.cubes = [];
 	this.cubeNumAt = [];
 	this.sliceX = [];
@@ -157,8 +144,7 @@ var MultiCubeN = function ( multiCubeSize, unitCubeSize, unitCubeSpace ) {
 				this.sliceX[z][y][x] = 0;
 				this.sliceY[z][y][x] = 0;
 				this.sliceZ[z][y][x] = 0;
-				this.cubes.push(new UnitCube( this.unitCubeSize, this.unitCubeSpace ));
-				// this.cubes.push(new THREE.Mesh( this.unitGeo, this.unitMat ));
+				this.cubes.push(new UnitCube( this.unitCubeSize, this.unitCubeBorder ));
 				this.cubes[i].position.x = (x + 0.5 - 0.5 * this.multiCubeSize) * this.gridPitch + this.position.x;
 				this.cubes[i].position.y = (y + 0.5 - 0.5 * this.multiCubeSize) * this.gridPitch + this.position.y;
 				this.cubes[i].position.z = (z + 0.5 - 0.5 * this.multiCubeSize) * this.gridPitch + this.position.z;

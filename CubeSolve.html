@@ -21,7 +21,8 @@
 			var MIXUP_COUNT 		= 1; 				// Number of rotations to use in mixing up cube.
 
 			var UNIT_CUBE_SIZE 		= 20;
-			var CUBE_SPACE 			= 2;
+			var UNIT_CUBE_BORDER 	= 2;
+			var CUBE_SPACE 			= 0;
 			var CUBE_POSITION 		= new THREE.Vector3(0, 0, 0);
 			var RENDER_DISTANCE 	= 5000;				// Render distance and grid size in pixels
 
@@ -246,7 +247,7 @@
 			planeGround.receiveShadow = true; 
 
 			// Create the MultiCubeN and add it to the scene.			
-			multiCubeN = new MultiCubeN( NUM_CUBE, UNIT_CUBE_SIZE, CUBE_SPACE ); 
+			multiCubeN = new MultiCubeN( NUM_CUBE, UNIT_CUBE_SIZE, CUBE_SPACE, UNIT_CUBE_BORDER ); 
 			multiCubeN.addToScene( scene );
 			multiCubeN.setPosition(CUBE_POSITION);
 
