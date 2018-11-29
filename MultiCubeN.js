@@ -29,6 +29,82 @@
 //  | Right  | faceR |   14   |  Red   | X[N-1] |
 //  |--------|-------|--------|--------|--------|
 
+
+var UnitCube = function ( faceWidth, edgeWidth ) {
+	var edgeCenter = ( faceWidth + edgeWidth ) / 2;
+	var redMesh    = new THREE.Mesh( new THREE.BoxGeometry( edgeWidth, faceWidth, faceWidth), new THREE.MeshStandardMaterial( { color: 0xff0000 } ));
+	var orangeMesh = new THREE.Mesh( new THREE.BoxGeometry( edgeWidth, faceWidth, faceWidth), new THREE.MeshStandardMaterial( { color: 0xff8c00 } ));
+	var yellowMesh = new THREE.Mesh( new THREE.BoxGeometry( faceWidth, edgeWidth, faceWidth), new THREE.MeshStandardMaterial( { color: 0xffff00 } ));
+	var whiteMesh  = new THREE.Mesh( new THREE.BoxGeometry( faceWidth, edgeWidth, faceWidth), new THREE.MeshStandardMaterial( { color: 0xffffff } ));
+	var blueMesh   = new THREE.Mesh( new THREE.BoxGeometry( faceWidth, faceWidth, edgeWidth), new THREE.MeshStandardMaterial( { color: 0x0000ff } ));
+	var greenMesh  = new THREE.Mesh( new THREE.BoxGeometry( faceWidth, faceWidth, edgeWidth), new THREE.MeshStandardMaterial( { color: 0x00cc11 } ));
+
+	var geoX = new THREE.BoxGeometry( faceWidth, edgeWidth, edgeWidth );
+	var geoY = new THREE.BoxGeometry( edgeWidth, faceWidth, edgeWidth );
+	var geoZ = new THREE.BoxGeometry( edgeWidth, edgeWidth, faceWidth + 2*edgeWidth );  // Add extra length in Z to fill in corners
+	var blackMat = new THREE.MeshStandardMaterial( { color: 0x000000 } );
+	var edge01 = new THREE.Mesh( geoX, blackMat );
+	var edge02 = new THREE.Mesh( geoX, blackMat );
+	var edge03 = new THREE.Mesh( geoX, blackMat );
+	var edge04 = new THREE.Mesh( geoX, blackMat );
+	var edge05 = new THREE.Mesh( geoY, blackMat );
+	var edge06 = new THREE.Mesh( geoY, blackMat );
+	var edge07 = new THREE.Mesh( geoY, blackMat );
+	var edge08 = new THREE.Mesh( geoY, blackMat );
+	var edge09 = new THREE.Mesh( geoZ, blackMat );
+	var edge10 = new THREE.Mesh( geoZ, blackMat );
+	var edge11 = new THREE.Mesh( geoZ, blackMat );
+	var edge12 = new THREE.Mesh( geoZ, blackMat );
+
+	redMesh.position.x 		=  edgeCenter;
+	orangeMesh.position.x 	= -edgeCenter;
+	yellowMesh.position.y 	=  edgeCenter;
+	whiteMesh.position.y 	= -edgeCenter;
+	blueMesh.position.z 	=  edgeCenter;
+	greenMesh.position.z 	= -edgeCenter;
+
+	edge01.position.set( 0, -edgeCenter, -edgeCenter );
+	edge02.position.set( 0, -edgeCenter,  edgeCenter );
+	edge03.position.set( 0,  edgeCenter, -edgeCenter );
+	edge04.position.set( 0,  edgeCenter,  edgeCenter );
+
+	edge05.position.set( -edgeCenter, 0, -edgeCenter );
+	edge06.position.set( -edgeCenter, 0,  edgeCenter );
+	edge07.position.set(  edgeCenter, 0, -edgeCenter );
+	edge08.position.set(  edgeCenter, 0,  edgeCenter );
+
+	edge09.position.set( -edgeCenter, -edgeCenter, 0 );
+	edge10.position.set( -edgeCenter,  edgeCenter, 0 );
+	edge11.position.set(  edgeCenter, -edgeCenter, 0 );
+	edge12.position.set(  edgeCenter,  edgeCenter, 0 );
+
+	unitCubeGroup = new THREE.Group();
+
+	unitCubeGroup.add(redMesh);
+	unitCubeGroup.add(orangeMesh);
+	unitCubeGroup.add(yellowMesh);
+	unitCubeGroup.add(whiteMesh);
+	unitCubeGroup.add(blueMesh);
+	unitCubeGroup.add(greenMesh);
+
+	unitCubeGroup.add(edge01);
+	unitCubeGroup.add(edge02);
+	unitCubeGroup.add(edge03);
+	unitCubeGroup.add(edge04);
+
+	unitCubeGroup.add(edge05);
+	unitCubeGroup.add(edge06);
+	unitCubeGroup.add(edge07);
+	unitCubeGroup.add(edge08);
+
+	unitCubeGroup.add(edge09);
+	unitCubeGroup.add(edge10);
+	unitCubeGroup.add(edge11);
+	unitCubeGroup.add(edge12);
+
+	return( unitCubeGroup );
+};
+
 var MultiCubeN = function ( multiCubeSize, unitCubeSize, unitCubeSpace ) {
 	// Set default values.
 	this.position = new THREE.Vector3(0, 0, 0);  	// FIX ME Add this later to allow MultiCubeN away from origin.
@@ -81,7 +157,8 @@ var MultiCubeN = function ( multiCubeSize, unitCubeSize, unitCubeSpace ) {
 				this.sliceX[z][y][x] = 0;
 				this.sliceY[z][y][x] = 0;
 				this.sliceZ[z][y][x] = 0;
-				this.cubes.push(new THREE.Mesh( this.unitGeo, this.unitMat ));
+				this.cubes.push(new UnitCube( this.unitCubeSize, this.unitCubeSpace ));
+				// this.cubes.push(new THREE.Mesh( this.unitGeo, this.unitMat ));
 				this.cubes[i].position.x = (x + 0.5 - 0.5 * this.multiCubeSize) * this.gridPitch + this.position.x;
 				this.cubes[i].position.y = (y + 0.5 - 0.5 * this.multiCubeSize) * this.gridPitch + this.position.y;
 				this.cubes[i].position.z = (z + 0.5 - 0.5 * this.multiCubeSize) * this.gridPitch + this.position.z;
@@ -176,7 +253,8 @@ MultiCubeN.prototype.mixUp = function( count ) {
 			rotDir = -1;
 		}
 
-		delay = 1.1 * _this.frameUpdateTime * _this.cubeRotateSteps; 	// Add 5% pause between 90 degree rotations.
+		// FIX ME!  This doesn't work reliably.  Mix-up rotates faces while cube is unstable.
+		delay = 1.05 * _this.frameUpdateTime * _this.cubeRotateSteps; 	// Add 5% pause between 90 degree rotations.
 
 		this.rotateSlice90( axisID, sliceNum, rotDir ); 
 		timeoutID = setTimeout( function() {

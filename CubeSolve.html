@@ -16,9 +16,9 @@
 		<script src="http://127.0.0.1:8887/MultiCubeN.js"></script>
 		<script>
 			// Define constants.
-			var NUM_CUBE			= 4;  				// Specify multi-cube size (# of unit cubes per edge, min=2, max=10)
+			var NUM_CUBE			= 3;  				// Specify multi-cube size (# of unit cubes per edge, min=2, max=10)
 
-			var MIXUP_COUNT 		= 5; 				// Number of rotations to use in mixing up cube.
+			var MIXUP_COUNT 		= 1; 				// Number of rotations to use in mixing up cube.
 
 			var UNIT_CUBE_SIZE 		= 20;
 			var CUBE_SPACE 			= 2;
@@ -242,13 +242,18 @@
 			var planeGround = new THREE.Mesh( planeGeo, planeMat );
 			planeGround.rotation.x = -Math.PI / 2;
 			planeGround.position.y = GRID_POSITION_Y - 2;
-			scene.add(planeGround);
+			scene.add( planeGround );
 			planeGround.receiveShadow = true; 
 
 			// Create the MultiCubeN and add it to the scene.			
 			multiCubeN = new MultiCubeN( NUM_CUBE, UNIT_CUBE_SIZE, CUBE_SPACE ); 
 			multiCubeN.addToScene( scene );
 			multiCubeN.setPosition(CUBE_POSITION);
+
+			// Create a single UnitCube to test new functionality.
+			// testCube = new UnitCube( UNIT_CUBE_SIZE, CUBE_SPACE );
+			// testCube.position.set(0, 100, 0);
+			// scene.add( testCube );
 
 			// Create a renderer.
 			var renderer = new THREE.WebGLRenderer(); 
